@@ -1392,9 +1392,10 @@ RunForest <- function(df){
 RunTrialWithOpts2 <- function(type,
                               trtmnt,
                               bin,
-                              mat_i,
+                              boot_i = 0,
+                              fold = NULL,
                               resp = "D",
-                              grain = "fine"
+                              grain = "fine",
                               ) {
 
 
@@ -1406,8 +1407,10 @@ RunTrialWithOpts2 <- function(type,
     ##    trtmnt - the treatment type (depends also on grain):
     ##         1) grain == "fine" --> trtmnt in EMD, ECMD, C, LMD, LCMD
     ##         2) grain != "fine" --> trtmnt in L, C, E
+    ##    bin - which bin of the season you'll be using
+    ##    mat_i - which column of index_matrix to use for bootstrap
+    ##    fold - which fold to use for CV
     ##    resp - sets the response variable for the models
-    ##    R.val - R value for the boot strap
     ##    grain - set the granularity of the trtmnt parameter (pretty hacky, sorry)
     ## @Out:
     ##    The AIC of the model, or the boostrapped AIC of the model
@@ -1421,7 +1424,7 @@ RunTrialWithOpts2 <- function(type,
     ## require(lme4)
     ## require(AICcmodavg)
     
-    ## subsetting response var df by what treatment blocks received
+    ## subsetting response var df by the treatment its blocks received
 
     if (grain == "fine") {
         dc.subset <- subset(dmg, trt2 == trtmnt)
@@ -1431,8 +1434,10 @@ RunTrialWithOpts2 <- function(type,
 
     ## select the proper rows:
     if (mat_i != 0) {
-        dc.subset <- dc.subset[index_matrix[[trtmnt]][,mat_i],]
+        dc.subset <- dc.subset[boot_matrix[[trtmnt]][, mat_i], ]
     }
+
+    is.null && (dc.subset <- dc.subset[cv_list[[trtmnt]][[fold]], ])
 
     ## merging the subset with the season bins:
     dc <- merge(dc.subset, seas.bins, c("Year", "Ranch", "Block"))
@@ -1445,16 +1450,11 @@ RunTrialWithOpts2 <- function(type,
            )
 
     ## general predictors
-    if (grepl("L", trtmnt)) {
-        other.terms <- " ~ (1|SampleID)"
-        other.terms <- paste0(other.terms," + (1|Year) + (1|Block)")
-        other.terms <- paste0(other.terms," + Plot + Variety + tree_age")
-    } else {
-        other.terms <- " ~ (1|SampleID)"
-        other.terms <- paste0(other.terms," + (1|Year) + loc + (1|Block)")
-        other.terms <- paste0(other.terms," + Plot + Variety + tree_age")
-    }
-    
+    is.null(fold) && (other.terms <- " ~ (1|SampleID)")
+    other.terms <- paste0(other.terms," + (1|Year) + (1|Block)")
+    other.terms <- paste0(other.terms," + Plot + Variety + tree_age")
+    grepl("L", trtmnt) || (other.terms <- paste0(other.terms," + loc"))
+
     ## specific predictors
     if (bin == 0) {
         bin.terms <- NULL
@@ -1464,12 +1464,6 @@ RunTrialWithOpts2 <- function(type,
 
     ## create formula
     f <- as.formula(paste0(response.term, other.terms, bin.terms))
-
-  
-
-
-    ## For COR see:
-    ## http://stackoverflow.com/questions/21441817/glmer-predict-with-binomial-data-cbind-count-data
 
     ## model
     m <- try(glmer(f, data = dc, family = "binomial"), silent = FALSE)
@@ -1526,16 +1520,3 @@ FoldData <- function(df, k = 5, random = TRUE, seed = NULL){
     folds <- SegmentVec(rows, k, ordered = FALSE)
 }
 
-SetREModel <- function(df, f){
-    ## @Function PredictGlmer
-    ## @Params:
-    ##   - df dataframe: data for regression
-    ##   - f formula: formula for regression
-    ## @Out: model with fixed RE values, ready for prediction
-    ## @Note: This was extremely helpful and I copied verbatum:
-    ## http://stackoverflow.com/questions/21441817/glmer-predict-with-binomial-data-cbind-count-data
-
-    ## require(lme4)
-
-   
-}
