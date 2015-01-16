@@ -3246,7 +3246,7 @@ names(index_matrix) <- na.omit(unique(dmg$trt2))
 val.grid <- list(c("M", "F", "E"), c("EMD", "ECMD", "CONV", "LMD", "LCMD"),
                  0:5, 0:10)
 val.grid <- expand.grid(val.grid)
-colnames(val.grid) <- c("type", "trtmnt", "bin", "mat_i")
+colnames(val.grid) <- c("type", "trtmnt", "bin", "boot_i")
 seas.bins <- ddply(c, .(Year, Ranch, Block), BinSeason, num.bins = 5)
 results <- mdply(val.grid, failwith(NA, RunTrialWithOpts2), 
     .progress = "text") 
@@ -3290,4 +3290,11 @@ ggplot(test, aes(x = bin, y = meanAIC, color = color)) + geom_point(size = 2) + 
 ## test: FoldData:
 
 test <- FoldData(dmg) ## works
-cv_list <- dlply(dmg, .(trt2), FoldData)
+cv_list <- dlply(dmg, .(trt2), FoldData, seed = 10)
+val.grid <- list(c("M", "F", "E"), c("EMD", "ECMD", "CONV", "LMD", "LCMD"),
+                 0:5, 1:5)
+val.grid <- expand.grid(val.grid)
+colnames(val.grid) <- c("type", "trtmnt", "bin", "fold")
+seas.bins <- ddply(c, .(Year, Ranch, Block), BinSeason, num.bins = 5)
+results <- mdply(val.grid, failwith(NA, RunTrialWithOpts2), 
+    .progress = "text") 

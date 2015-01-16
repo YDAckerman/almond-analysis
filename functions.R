@@ -1427,20 +1427,19 @@ RunTrialWithOpts2 <- function(type,
     ## subsetting response var df by the treatment its blocks received
 
     if (grain == "fine") {
-        dc.subset <- subset(dmg, trt2 == trtmnt)
+        dc_subset <- subset(dmg, trt2 == trtmnt)
     } else {
-        dc.subset <- subset(dmg, grepl(paste0("^",trtmnt), trt2))
+        dc_subset <- subset(dmg, grepl(paste0("^",trtmnt), trt2))
     }
 
     ## select the proper rows:
     if (mat_i != 0) {
-        dc.subset <- dc.subset[boot_matrix[[trtmnt]][, mat_i], ]
+        dc_subset <- dc_subset[boot_matrix[[trtmnt]][, mat_i], ]
     }
 
-    is.null && (dc.subset <- dc.subset[cv_list[[trtmnt]][[fold]], ])
 
     ## merging the subset with the season bins:
-    dc <- merge(dc.subset, seas.bins, c("Year", "Ranch", "Block"))
+    dc <- merge(dc_subset, seas.bins, c("Year", "Ranch", "Block"))
 
     ## response term
     switch( resp,
@@ -1450,8 +1449,13 @@ RunTrialWithOpts2 <- function(type,
            )
 
     ## general predictors
-    is.null(fold) && (other.terms <- " ~ (1|SampleID)")
-    other.terms <- paste0(other.terms," + (1|Year) + (1|Block)")
+    if (is.null(fold)) {
+        other.terms <- " ~ (1|SampleID) + "
+    } else {
+        other.terms <- " ~ "
+    }
+    
+    other.terms <- paste0(other.terms,"(1|Year) + (1|Block)")
     other.terms <- paste0(other.terms," + Plot + Variety + tree_age")
     grepl("L", trtmnt) || (other.terms <- paste0(other.terms," + loc"))
 
@@ -1465,15 +1469,37 @@ RunTrialWithOpts2 <- function(type,
     ## create formula
     f <- as.formula(paste0(response.term, other.terms, bin.terms))
 
-    ## model
-    m <- try(glmer(f, data = dc, family = "binomial"), silent = FALSE)
-    if (identical(class(m), "try-error")) {
+    ## Go CV route, or AIC route. 
+    if (is.null(fold)) {
+        ## CV
+
+        ## set training and test sets
+        dc_train <- dc[-cv_list[[trtmnt]][[fold]], ]
+        dc_test <- dc[cv_list[[trtmnt]][[fold]], ]
+
+        ## build model
+        m <- try(glmer(f, data = dc_train, family = "binomial"), silent = FALSE)
+        if (identical(class(m), "try-error")) {
             warning(paste(type, trtmnt, bin, sep =" "))
-            return(data.frame("AIC" = NA)) ##, "COR" = NA))
+            data.frame("COR" = NA)
         } else {
-            return(data.frame("AIC" = AIC(m)))
+            predicted <- predict(m, newdata = dc_test, type = "response")
+            actual <- na.omit(dc_test$DmgNOW / df_test$Tot_Nuts)
+            data.frame("COR" = cor(predicted, actual))
         }
-    
+
+    } else {
+        ## AIC
+
+        ## build model
+        m <- try(glmer(f, data = dc, family = "binomial"), silent = FALSE)
+        if (identical(class(m), "try-error")) {
+            warning(paste(type, trtmnt, bin, sep =" "))
+            data.frame("AIC" = NA) ##, "COR" = NA))
+        } else {
+            data.frame("AIC" = AIC(m))
+        }
+    }
 }
 
 aic.boot.fn <- function(data, index, f){
@@ -1489,7 +1515,7 @@ aic.boot.fn <- function(data, index, f){
     m <- try(glmer(formula = f, data = new_data, family = "binomial"),
              silent = TRUE)
     if (identical(m, "try-error") ) { return(NA) }
-    return(AIC(m))
+    AIC(m)
 }
 
 
