@@ -1,0 +1,8 @@
+## packages to open on startup (used for functions)
+require(plyr)
+require(lme4)
+require(AICcmodavg)
+require(chron)
+require(ggplot2)
+require(gridExtra)
+library(doMC) 
