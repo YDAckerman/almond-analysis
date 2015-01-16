@@ -3290,11 +3290,20 @@ ggplot(test, aes(x = bin, y = meanAIC, color = color)) + geom_point(size = 2) + 
 ## test: FoldData:
 
 test <- FoldData(dmg) ## works
+
+## test: RunTrialWithOpts2:
 cv_list <- dlply(dmg, .(trt2), FoldData, seed = 10)
+seas.bins <- ddply(c, .(Year, Ranch, Block), BinSeason, num.bins = 5)
+RunTrialWithOpts2("M", "CONV", 4, fold = 3)
+
+##Error in X %*% fixef(object) (from functions.R#1486) : non-conformable arguments
+
 val.grid <- list(c("M", "F", "E"), c("EMD", "ECMD", "CONV", "LMD", "LCMD"),
                  0:5, 1:5)
 val.grid <- expand.grid(val.grid)
 colnames(val.grid) <- c("type", "trtmnt", "bin", "fold")
 seas.bins <- ddply(c, .(Year, Ranch, Block), BinSeason, num.bins = 5)
+
+
 results <- mdply(val.grid, failwith(NA, RunTrialWithOpts2), 
     .progress = "text") 

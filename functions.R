@@ -1395,7 +1395,7 @@ RunTrialWithOpts2 <- function(type,
                               boot_i = 0,
                               fold = NULL,
                               resp = "D",
-                              grain = "fine",
+                              grain = "fine"
                               ) {
 
 
@@ -1433,8 +1433,8 @@ RunTrialWithOpts2 <- function(type,
     }
 
     ## select the proper rows:
-    if (mat_i != 0) {
-        dc_subset <- dc_subset[boot_matrix[[trtmnt]][, mat_i], ]
+    if (boot_i != 0) {
+        dc_subset <- dc_subset[boot_matrix[[trtmnt]][, boot_i], ]
     }
 
 
@@ -1457,7 +1457,7 @@ RunTrialWithOpts2 <- function(type,
     
     other.terms <- paste0(other.terms,"(1|Year) + (1|Block)")
     other.terms <- paste0(other.terms," + Plot + Variety + tree_age")
-    grepl("L", trtmnt) || (other.terms <- paste0(other.terms," + loc"))
+    if (grepl("L", trtmnt)) { other.terms <- paste0(other.terms," + loc") }
 
     ## specific predictors
     if (bin == 0) {
@@ -1470,7 +1470,7 @@ RunTrialWithOpts2 <- function(type,
     f <- as.formula(paste0(response.term, other.terms, bin.terms))
 
     ## Go CV route, or AIC route. 
-    if (is.null(fold)) {
+    if (!is.null(fold)) {
         ## CV
 
         ## set training and test sets
@@ -1533,7 +1533,7 @@ FoldData <- function(df, k = 5, random = TRUE, seed = NULL){
     ##   - seed integer vector: sets a seed for reproducability
     ## @Output: a list of integer vector folds
 
-    is.null(seed) || (set.seed(seed))
+    if (is.null(seed)) { set.seed(seed) }
 
     if (!is.logical(random)) {
         warning("random must be logical; setting to TRUE")
