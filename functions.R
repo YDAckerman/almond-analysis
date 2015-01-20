@@ -1366,7 +1366,7 @@ RunTrialWithOpts <- function(type, trtmnt, bins, mod = FALSE, resp = "D"){
     } else {
         return( AIC(m) )
     }
-} 
+}
 
 
 
@@ -1411,7 +1411,8 @@ RunTrialWithOpts2 <- function(type,
     ##    mat_i - which column of index_matrix to use for bootstrap
     ##    fold - which fold to use for CV
     ##    resp - sets the response variable for the models
-    ##    grain - set the granularity of the trtmnt parameter (pretty hacky, sorry)
+    ##    grain - set the granularity of the trtmnt parameter
+    ##            (pretty hacky, sorry)
     ## @Out:
     ##    The AIC of the model, or the boostrapped AIC of the model
     ##    *note* the bootstrapped AIC doesn't really have any formal
@@ -1454,10 +1455,10 @@ RunTrialWithOpts2 <- function(type,
     } else {
         other.terms <- " ~ "
     }
-    
+
     other.terms <- paste0(other.terms,"(1|Year) + (1|Block)")
     other.terms <- paste0(other.terms," + Plot + Variety + tree_age")
-    if (grepl("L", trtmnt)) { other.terms <- paste0(other.terms," + loc") }
+    if (!grepl("L", trtmnt)) { other.terms <- paste0(other.terms," + loc") }
 
     ## specific predictors
     if (bin == 0) {
@@ -1472,20 +1473,28 @@ RunTrialWithOpts2 <- function(type,
     ## Go CV route, or AIC route. 
     if (!is.null(fold)) {
         ## CV
-
         ## set training and test sets
         dc_train <- dc[-cv_list[[trtmnt]][[fold]], ]
         dc_test <- dc[cv_list[[trtmnt]][[fold]], ]
 
+        return(list("test" = dc_test, "train" = dc_train))
+
         ## build model
-        m <- try(glmer(f, data = dc_train, family = "binomial"), silent = FALSE)
+        m <- try(glmer(f, data = dc_train, family = "binomial"), silent = TRUE)
         if (identical(class(m), "try-error")) {
-            warning(paste(type, trtmnt, bin, sep =" "))
-            data.frame("COR" = NA)
+            warning(paste(type, trtmnt, bin, fold, sep =" "))
         } else {
-            predicted <- predict(m, newdata = dc_test, type = "response")
-            actual <- na.omit(dc_test$DmgNOW / df_test$Tot_Nuts)
-            data.frame("COR" = cor(predicted, actual))
+            ## I'm going to hack hard.
+            mm <- model.matrix(terms(m), dc_test)
+            shared <- intersect(colnames(mm), names(fixef(m)))
+            fxdef <- fixef(m)[shared]
+            preds <- mm %*% fxdef
+            ## predicted <- predict(m,
+            ##                      newdata = dc_test,
+            ##                      type = "response",
+            ##                      na.action = na.omit)
+            actual <- na.omit(dc_test$DmgNOW / dc_test$Tot_Nuts)
+            data.frame("COR" = cor(preds, actual))
         }
 
     } else {

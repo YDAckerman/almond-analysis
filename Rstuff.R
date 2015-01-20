@@ -9,29 +9,28 @@ source("../almond/R/libs.R")
 ######## 10.2.14 ########
 
 db = sapply(unique(SF$TrapSite),function(x){
-   
-				eggs = as.numeric(levels(SF$Eggs))[SF$Eggs]
-				females = as.numeric(levels(SF$Females))[SF$Females]
-				males = as.numeric(levels(SF$Males))[SF$Males]
+    
+    eggs = as.numeric(levels(SF$Eggs))[SF$Eggs]
+    females = as.numeric(levels(SF$Females))[SF$Females]
+    males = as.numeric(levels(SF$Males))[SF$Males]
 
-				av_eggs =
-				mean(eggs[!is.na(eggs[which(LHR$TrapSite == x)])])
-				
-				av_fem = 
-				mean(females[which(LHR$TrapSite == x)])
+    av_eggs =
+        mean(eggs[!is.na(eggs[which(LHR$TrapSite == x)])])
+    
+    av_fem = 
+        mean(females[which(LHR$TrapSite == x)])
 
-				av_mal = 
-				mean(males[which(LHR$TrapSite == x)])
+    av_mal = 
+        mean(males[which(LHR$TrapSite == x)])
 
-				av_adults =
-				mean((males+females)[which(LHR$TrapSite
-				== x)])
-				
-				ans = c(av_eggs,av_fem,av_mal,av_adults,x)
+    av_adults =
+        mean((males+females)[which(LHR$TrapSite
+                                   == x)])
+    
+    ans = c(av_eggs,av_fem,av_mal,av_adults,x)
 
-				return(ans)
-				}
-				)
+    return(ans)
+})
 
 ### Let's assume eggs are a good response for MD:
 
@@ -3292,11 +3291,10 @@ ggplot(test, aes(x = bin, y = meanAIC, color = color)) + geom_point(size = 2) + 
 test <- FoldData(dmg) ## works
 
 ## test: RunTrialWithOpts2:
-cv_list <- dlply(dmg, .(trt2), FoldData, seed = 10)
+cv_list <- dlply(dmg, .(trt2), FoldData, k = 5, seed = 10)
 seas.bins <- ddply(c, .(Year, Ranch, Block), BinSeason, num.bins = 5)
 RunTrialWithOpts2("M", "CONV", 4, fold = 3)
 
-##Error in X %*% fixef(object) (from functions.R#1486) : non-conformable arguments
 
 val.grid <- list(c("M", "F", "E"), c("EMD", "ECMD", "CONV", "LMD", "LCMD"),
                  0:5, 1:5)
@@ -3305,5 +3303,29 @@ colnames(val.grid) <- c("type", "trtmnt", "bin", "fold")
 seas.bins <- ddply(c, .(Year, Ranch, Block), BinSeason, num.bins = 5)
 
 
-results <- mdply(val.grid, failwith(NA, RunTrialWithOpts2), 
-    .progress = "text") 
+results <- mdply(val.grid, failwith(NA, RunTrialWithOpts2), .progress = "text") 
+
+## 1/20/15 ##
+
+## just input gps data. Merging:
+
+gpsTest <- merge(c,gps, by("Ranch", "TrapSite"))
+
+## good stuff is happening:
+## I'm making a reproducible example:
+
+randomizeVector <- function(vector) {
+
+    if (!is.vector) stop("must be a vector") 
+
+    len <- length(vector)
+    vals <- unique(vector)
+    
+    if (is.numeric(vector)){ }
+    if (is.character(vector)){}
+    if (is.factor(vector)){}
+    else{}
+}
+
+
+## tomorrow...
