@@ -3314,18 +3314,33 @@ gpsTest <- merge(c,gps, by("Ranch", "TrapSite"))
 ## good stuff is happening:
 ## I'm making a reproducible example:
 
-randomizeVector <- function(vector) {
+## randomizeVector <- function(vector) {
 
-    if (!is.vector) stop("must be a vector") 
+##     if (!is.vector) stop("must be a vector") 
 
-    len <- length(vector)
-    vals <- unique(vector)
-    
-    if (is.numeric(vector)){ }
-    if (is.character(vector)){}
-    if (is.factor(vector)){}
-    else{}
-}
+##     len <- length(vector)
+##     vals <- unique(vector)
+
+##     if (is.numeric(vector)){ }
+##     if (is.character(vector)){}
+##     if (is.factor(vector)){}
+##     else{}
+## }
 
 
-## tomorrow...
+## tomorrow... see test and train dataframes.x
+
+## 1/21/15 ##
+## I'm going to make that repex once I'm really sure I don't know what's going
+## on:
+
+cv_list <- dlply(dmg, .(trt2), FoldData, k = 5, seed = 10)
+seas.bins <- ddply(c, .(Year, Ranch, Block), BinSeason, num.bins = 5)
+dmg_sets <-  dlply(dmg, .(trt2), merge, y = seas.bins,
+                   by = c("Year", "Ranch", "Block")) 
+val.grid <- list(c("M", "F", "E"), c("EMD", "ECMD", "CONV", "LMD", "LCMD"),
+                 0:5, 3)
+val.grid <- expand.grid(val.grid)
+colnames(val.grid) <- c("type", "trtmnt", "bin", "fold")
+registerDoMC(cores=4) 
+results <- mdply(val.grid, failwith(NA, RunTrialWithOpts2), .parallel = TRUE) 

@@ -1392,10 +1392,9 @@ RunForest <- function(df){
 RunTrialWithOpts2 <- function(type,
                               trtmnt,
                               bin,
-                              boot_i = 0,
                               fold = NULL,
-                              resp = "D",
-                              grain = "fine"
+                              boot_i = 0,
+                              resp = "D"
                               ) {
 
 
@@ -1425,22 +1424,14 @@ RunTrialWithOpts2 <- function(type,
     ## require(lme4)
     ## require(AICcmodavg)
     
-    ## subsetting response var df by the treatment its blocks received
 
-    if (grain == "fine") {
-        dc_subset <- subset(dmg, trt2 == trtmnt)
-    } else {
-        dc_subset <- subset(dmg, grepl(paste0("^",trtmnt), trt2))
-    }
+    ## Selecting the right dataset to use
+    dc <- dmg_sets[[trtmnt]]
 
     ## select the proper rows:
     if (boot_i != 0) {
-        dc_subset <- dc_subset[boot_matrix[[trtmnt]][, boot_i], ]
+        dc <- dc[boot_matrix[[trtmnt]][, boot_i], ]
     }
-
-
-    ## merging the subset with the season bins:
-    dc <- merge(dc_subset, seas.bins, c("Year", "Ranch", "Block"))
 
     ## response term
     switch( resp,
@@ -1459,7 +1450,6 @@ RunTrialWithOpts2 <- function(type,
     other.terms <- paste0(other.terms,"(1|Year) + (1|Block)")
     other.terms <- paste0(other.terms," + Plot + Variety + tree_age")
     if (!grepl("L", trtmnt)) { other.terms <- paste0(other.terms," + loc") }
-
     ## specific predictors
     if (bin == 0) {
         bin.terms <- NULL
@@ -1477,7 +1467,7 @@ RunTrialWithOpts2 <- function(type,
         dc_train <- dc[-cv_list[[trtmnt]][[fold]], ]
         dc_test <- dc[cv_list[[trtmnt]][[fold]], ]
 
-        return(list("test" = dc_test, "train" = dc_train))
+        ##return(list("test" = dc_test, "train" = dc_train))
 
         ## build model
         m <- try(glmer(f, data = dc_train, family = "binomial"), silent = TRUE)
