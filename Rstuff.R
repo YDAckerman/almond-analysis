@@ -3334,13 +3334,77 @@ gpsTest <- merge(c,gps, by("Ranch", "TrapSite"))
 ## I'm going to make that repex once I'm really sure I don't know what's going
 ## on:
 
+## individual testing:
+RunTrialWithOpts2("M", "EMD", 2, fold = 3)
+
 cv_list <- dlply(dmg, .(trt2), FoldData, k = 5, seed = 10)
 seas.bins <- ddply(c, .(Year, Ranch, Block), BinSeason, num.bins = 5)
 dmg_sets <-  dlply(dmg, .(trt2), merge, y = seas.bins,
                    by = c("Year", "Ranch", "Block")) 
 val.grid <- list(c("M", "F", "E"), c("EMD", "ECMD", "CONV", "LMD", "LCMD"),
-                 0:5, 3)
+                 0:5, 1:5)
 val.grid <- expand.grid(val.grid)
 colnames(val.grid) <- c("type", "trtmnt", "bin", "fold")
 registerDoMC(cores=4) 
-results <- mdply(val.grid, failwith(NA, RunTrialWithOpts2), .parallel = TRUE) 
+results <- mdply(val.grid, failwith(NA, RunTrialWithOpts2), .progress = "text") 
+
+
+val.grid <- list(c("M"), c("CONV"), 2, 3)
+val.grid <- expand.grid(val.grid)
+colnames(val.grid) <- c("type", "trtmnt", "bin", "fold")
+
+## ok so that worked-ish. Now let's see about that repex:
+library(lme4)
+randomData <- data.frame( "Year" = sample(c(2009, 2010, 2011, 2012, 2013), 488,
+                              replace = TRUE),
+                         "Block" = sample(c("13-3", "13-4", "14-4", "24-3",
+                             "24-4", "1-3", "11-4", "12-3", "12-4", "2-3",
+                             "2-4", "13-1", "13-2", "14-1", "24-1", "24-2",
+                             "11-1", "11-2", "12-1", "12-2", "25-1", "30-1",
+                             "30-2", "29-3", "29-4", "30-3", "30-4", "31-1",
+                             "25-4", "31-2", "31-3", "31-4", "36-1", "36-4"),
+                             488, replace = TRUE),
+                         "Plot" = sample(c("Interior", "Edge"), 488,
+                             replace = TRUE),
+                         "loc" = sample(c("LH", "SF"), 488, replace = TRUE),
+                         "DmgNOW" = sample(1:200, 488, replace = TRUE),
+                         "Tot_Nuts" = sample(300:700, 488, replace = TRUE),
+                         "Variety" = sample(c("N", "F", "C", "M", "W",
+                             "B", "P", "Mi", "R", "S"), 488, replace = TRUE),
+                         "tree_age" = sample(10:25, 488, replace = TRUE),
+                         "M4" = sample(0:10, 488, replace = TRUE),
+                         stringsAsFactors = FALSE)
+
+test <- sample(1:488, 98)
+train <- randomData[-test,]
+test <- randomData[test,]
+
+response <- "cbind(DmgNOW, Tot_Nuts - DmgNOW) ~ "
+predictors <- "(1|Year) + (1|Block) + Plot + Variety + tree_age + loc"
+f <- as.formula(paste0(response, predictors))
+m <- glmer(f, data = train, family = "binomial")
+preds <- predict(m, newdata = test, re.form = NULL, type = "response")
+
+
+## Ok, I'm going to have to dig deep:
+## I'll go one by one and see at which predictor it breaks:
+
+randomData <- data.frame( "Year" = error_data$Year,
+                         "Block" = error_data$Block,
+                         "Plot" = error_data$Plot,
+                         "loc" = error_data$loc,
+                         "DmgNOW" = error_data$DmgNOW,
+                         "Tot_Nuts" = error_data$Tot_Nuts,
+                         "Variety" = error_data$Variety,##sample(c("N", "F", "C", "M", "W",
+                             ##"B", "P", "Mi", "R", "S"), 488, replace = TRUE),
+                         "tree_age" = error_data$tree_age,
+                         "M3" = error_data$M3, 
+                         stringsAsFactors = FALSE)
+
+
+test <- cv_list[["EMD"]][[1]]
+train <- randomData[-test,]
+test <- randomData[test,]
+
+m <- glmer(f, data = train, family = "binomial")
+preds <- predict(m, newdata = test, re.form = NULL, type = "response")

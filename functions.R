@@ -1397,6 +1397,8 @@ RunTrialWithOpts2 <- function(type,
                               resp = "D"
                               ) {
 
+    ##print(fold)
+    ##stop()
 
     ## @Function RunTrialWithOpts2
     ## use: runs models based on different type, trtmnt, bin combinations
@@ -1423,7 +1425,7 @@ RunTrialWithOpts2 <- function(type,
 
     ## require(lme4)
     ## require(AICcmodavg)
-    
+
 
     ## Selecting the right dataset to use
     dc <- dmg_sets[[trtmnt]]
@@ -1464,29 +1466,38 @@ RunTrialWithOpts2 <- function(type,
     if (!is.null(fold)) {
         ## CV
         ## set training and test sets
-        dc_train <- dc[-cv_list[[trtmnt]][[fold]], ]
-        dc_test <- dc[cv_list[[trtmnt]][[fold]], ]
+        dc_train <- dc[-cv_list[[trtmnt]][[fold]], c(1,3,4,7,10,12,17,64, 82)]
+        dc_test <- dc[cv_list[[trtmnt]][[fold]], c(1,3,4,7,10,12,17,64, 82)]
 
-        ##return(list("test" = dc_test, "train" = dc_train))
+        return(dc[,c(1,3,4,7,10,12,17,64, 82)])
 
         ## build model
         m <- try(glmer(f, data = dc_train, family = "binomial"), silent = TRUE)
         if (identical(class(m), "try-error")) {
-            warning(paste(type, trtmnt, bin, fold, sep =" "))
+            ##warning(paste(type, trtmnt, bin, fold, sep =" "))
+            data.frame("COR" = NA)
         } else {
-            ## I'm going to hack hard.
-            mm <- model.matrix(terms(m), dc_test)
-            shared <- intersect(colnames(mm), names(fixef(m)))
-            fxdef <- fixef(m)[shared]
-            preds <- mm %*% fxdef
-            ## predicted <- predict(m,
-            ##                      newdata = dc_test,
-            ##                      type = "response",
-            ##                      na.action = na.omit)
-            actual <- na.omit(dc_test$DmgNOW / dc_test$Tot_Nuts)
-            data.frame("COR" = cor(preds, actual))
-        }
 
+            ## I'm going to hack hard.
+            ## mm <- model.matrix(terms(m), dc_test)
+            ## shared <- intersect(colnames(mm), names(fixef(m)))
+            ## fxdef <- fixef(m)[shared]
+            ## preds <- try(mm %*% fxdef, silent = TRUE)
+            ## if (identical(class(preds), "try-error")) {
+            ##     ##warning(paste(type, trtmnt, bin, fold, sep =" "))
+            ##     return(data.frame("COR" = NA))
+            ## } else {
+            preds <- try(predict(m,
+                                 newdata = dc_test,
+                                 type = "response",
+                                     re.form = NULL))
+            if (identical(preds, "try-error")) {
+                data.frame("COR" = NA)
+            } else {
+                actual <- na.omit(dc_test$DmgNOW / dc_test$Tot_Nuts)
+                data.frame("COR" = cor(preds, actual))
+            }
+        }
     } else {
         ## AIC
 
@@ -1523,16 +1534,16 @@ MakeIndices <- function(tmnt, num = 10){
     i <- replicate(num, sample(1:nrow(df), nrow(df), rep = TRUE))
 }
 
-FoldData <- function(df, k = 5, random = TRUE, seed = NULL){
+FoldRows <- function(df, k = 5, random = TRUE, seed = NULL){
     ## @Function FoldData
     ## @Params:
-    ##   - df dataframe: data to fold
-    ##   - k integer: number of folds
+    ##   - df dataframe: data to be used for CV
+    ##   - k integer: number of folds desired
     ##   - random logical: if true, randomizes rows before folding
     ##   - seed integer vector: sets a seed for reproducability
     ## @Output: a list of integer vector folds
 
-    if (is.null(seed)) { set.seed(seed) }
+    if (!is.null(seed)) { set.seed(seed) }
 
     if (!is.logical(random)) {
         warning("random must be logical; setting to TRUE")
