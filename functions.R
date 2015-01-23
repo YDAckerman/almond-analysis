@@ -1,4 +1,4 @@
-##----- General use -----##
+#----- General use -----##
 
 ## 10.22.14
 `%ni%` <- Negate(`%in%`)
@@ -1394,7 +1394,9 @@ RunTrialWithOpts2 <- function(type,
                               bin,
                               fold = NULL,
                               boot_i = NULL,
-                              resp = "D"
+                              resp = "D",
+                              dmg_sets = NULL,
+                              cv_list = NULL
                               ) {
 
 
@@ -1423,8 +1425,8 @@ RunTrialWithOpts2 <- function(type,
 
     ## require(lme4)
     ## require(AICcmodavg)
-
-
+    if (is.null(dmg_sets) | is.null(cv_list)){stop("We need complete data")}
+    
     ## Selecting the right dataset to use
     dc <- dmg_sets[[trtmnt]]
 
@@ -1449,7 +1451,7 @@ RunTrialWithOpts2 <- function(type,
     }
 
     other.terms <- paste0(other.terms,"(1|Year) + (1|Block)")
-    other.terms <- paste0(other.terms," + Plot + as.factor(Variety) + tree_age")
+    other.terms <- paste0(other.terms," + Plot + Variety + tree_age")
     if (!grepl("L", trtmnt)) { other.terms <- paste0(other.terms," + loc") }
 
     ## specific predictors
@@ -1504,31 +1506,30 @@ RunTrialWithOpts2 <- function(type,
 }
 
 
-testRunTrialWithOpts2 <- function(K = 5, parallel = FALSE) {
+testRunTrialWithOpts2 <- function(K = 5, bins = 5, parallel = FALSE) {
+
     cv_list <- dlply(dmg, .(trt2), FoldData, k = K, seed = 10)
-    seas.bins <- ddply(c, .(Year, Ranch, Block), BinSeason, num.bins = 5)
-    dmg_sets <-  dlply(dmg, .(trt2), merge, y = seas.bins,
-                       by = c("Year", "Ranch", "Block")) 
-    val.grid <- list(c("M", "F", "E"), c("EMD", "ECMD", "CONV", "LMD", "LCMD"),
-                     0:5, 1:K)
-    val.grid <- expand.grid(val.grid, stringsAsFactors = FALSE)
-    colnames(val.grid) <- c("type", "trtmnt", "bin", "fold")
+    seas_bins <- ddply(c, .(Year, Ranch, Block), BinSeason, num.bins = bins)
+    dmg_sets <-  dlply(dmg, .(trt2), merge, y = seas_bins,
+                       by = c("Year", "Ranch", "Block"))
 
-    if(parallel){
-        registerDoMC(cores = 4)
+    val_grid <- list(c("M", "F", "E"), c("EMD", "ECMD", "CONV", "LMD", "LCMD"),
+                     0:bins, 1:K)
+    val_grid <- expand.grid(val_grid, stringsAsFactors = FALSE)
+    colnames(val_grid) <- c("type", "trtmnt", "bin", "fold")
 
-        par_opts = list(
-            .export = c("dmg_sets", "cv_list"),
-            .packages = c("lme4"))
-        
-        results <- mdply(val.grid,
-                         RunTrialWithOpts2,
-                         .parallel = TRUE,
-                         .paropts = par_opts,
-                         .inform = TRUE)
-    } else {
-        results <- mdply(val.grid, RunTrialWithOpts2, .progress = "text")
-    }
+    registerDoMC(cores = 4)
+
+    par_opts = list(.export = c("dmg_sets", "cv_list"), .packages = c("lme4"))
+
+    results <- mdply(val_grid,
+                     RunTrialWithOpts2,
+                     dmg_sets = dmg_sets,
+                     cv_list = cv_list,
+                     .progress = "text",
+                     .parallel = parallel,
+                     .paropts = par_opts,
+                     .inform = TRUE)
 }
 
 

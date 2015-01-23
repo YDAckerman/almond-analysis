@@ -3430,3 +3430,21 @@ preds <- predict(m, newdata = test, re.form = NULL, type = "response")
 
 ## let's try with 10-fold:
 ## also, let's see if we can make it parallel
+
+
+## Ok, so once I cross validate for 'variable utility' I can pick the top performers
+## and add them to a model to run on the full data set with trt2 as a factor.
+## Then I'd like to try to remove year and see what happens... HAPPENS?!
+
+## the Error in X %*% fixef(object) : non-conformable arguments I've been
+## getting is partially due to small samples of certain factors. Sometimes the
+## model gets trained on a dataset that does not include all the factors (though
+## setting as a factor should deal this this... I need to do so in the original
+## data set itself, not in the model...) because they were randomly excluded by
+## the folding process. NAILED IT.
+
+practice <- data.frame( A = c("a","b","c"), B = c("m", "n", "o"), C = c(1,2,3))
+
+practice[,c("A","B")] <- lapply(practice[,c("A","B")], as.factor)
+
+dmg[, c("loc", "Plot", "Variety")] <- lapply(dmg[, c("loc", "Plot", "Variety")], as.factor)
