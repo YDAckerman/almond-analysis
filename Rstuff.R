@@ -3380,7 +3380,7 @@ train <- randomData[-test,]
 test <- randomData[test,]
 
 response <- "cbind(DmgNOW, Tot_Nuts - DmgNOW) ~ "
-predictors <- "(1|Year) + (1|Block) + Plot + Variety + tree_age + loc"
+predictors <- "(1|Year) + (1|Block) + Plot + as.factor(Variety) + tree_age + loc"
 f <- as.formula(paste0(response, predictors))
 m <- glmer(f, data = train, family = "binomial")
 preds <- predict(m, newdata = test, re.form = NULL, type = "response")
@@ -3388,23 +3388,45 @@ preds <- predict(m, newdata = test, re.form = NULL, type = "response")
 
 ## Ok, I'm going to have to dig deep:
 ## I'll go one by one and see at which predictor it breaks:
+error_data <- RunTrialWithOpts2("M", "EMD", 3, fold = 1)
 
-randomData <- data.frame( "Year" = error_data$Year,
+randomData1 <- data.frame( "Year" = error_data$Year,
                          "Block" = error_data$Block,
                          "Plot" = error_data$Plot,
                          "loc" = error_data$loc,
                          "DmgNOW" = error_data$DmgNOW,
                          "Tot_Nuts" = error_data$Tot_Nuts,
-                         "Variety" = error_data$Variety,##sample(c("N", "F", "C", "M", "W",
-                             ##"B", "P", "Mi", "R", "S"), 488, replace = TRUE),
+                         "Variety" = sample(c("N", "F", "C", "M", "W",
+                              "B", "P", "Mi", "R", "S"), 488, replace = TRUE),
+                         "tree_age" = error_data$tree_age,
+                         "M3" = error_data$M3, 
+                         stringsAsFactors = FALSE)
+
+
+randomData2 <- data.frame( "Year" = error_data$Year,
+                         "Block" = error_data$Block,
+                         "Plot" = error_data$Plot,
+                         "loc" = error_data$loc,
+                         "DmgNOW" = error_data$DmgNOW,
+                         "Tot_Nuts" = error_data$Tot_Nuts,
+                         "Variety" = error_data$Variety,
                          "tree_age" = error_data$tree_age,
                          "M3" = error_data$M3, 
                          stringsAsFactors = FALSE)
 
 
 test <- cv_list[["EMD"]][[1]]
-train <- randomData[-test,]
-test <- randomData[test,]
+test <- sample(1:nrow(randomData2), 98)
+train <- randomData2[-test,]
+test <- randomData2[test,]
 
 m <- glmer(f, data = train, family = "binomial")
 preds <- predict(m, newdata = test, re.form = NULL, type = "response")
+
+## 1/22/15
+## FACTORS? I NEEDED TO MAKE THEM FACTORS?!
+
+## ET TU, expand.grid !?
+
+## let's try with 10-fold:
+## also, let's see if we can make it parallel

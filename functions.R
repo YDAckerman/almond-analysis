@@ -1393,12 +1393,10 @@ RunTrialWithOpts2 <- function(type,
                               trtmnt,
                               bin,
                               fold = NULL,
-                              boot_i = 0,
+                              boot_i = NULL,
                               resp = "D"
                               ) {
 
-    ##print(fold)
-    ##stop()
 
     ## @Function RunTrialWithOpts2
     ## use: runs models based on different type, trtmnt, bin combinations
@@ -1431,8 +1429,9 @@ RunTrialWithOpts2 <- function(type,
     dc <- dmg_sets[[trtmnt]]
 
     ## select the proper rows:
-    if (boot_i != 0) {
-        dc <- dc[boot_matrix[[trtmnt]][, boot_i], ]
+    if (!is.null(boot_i)) {
+        dc <- try(dc[boot_matrix[[trtmnt]][, boot_i], ])
+        if (identical(class(dc), "try-error")) {stop("boot_i must be an int")}
     }
 
     ## response term
@@ -1450,8 +1449,9 @@ RunTrialWithOpts2 <- function(type,
     }
 
     other.terms <- paste0(other.terms,"(1|Year) + (1|Block)")
-    other.terms <- paste0(other.terms," + Plot + Variety + tree_age")
+    other.terms <- paste0(other.terms," + Plot + as.factor(Variety) + tree_age")
     if (!grepl("L", trtmnt)) { other.terms <- paste0(other.terms," + loc") }
+
     ## specific predictors
     if (bin == 0) {
         bin.terms <- NULL
@@ -1465,33 +1465,24 @@ RunTrialWithOpts2 <- function(type,
     ## Go CV route, or AIC route. 
     if (!is.null(fold)) {
         ## CV
-        ## set training and test sets
-        dc_train <- dc[-cv_list[[trtmnt]][[fold]], c(1,3,4,7,10,12,17,64, 82)]
-        dc_test <- dc[cv_list[[trtmnt]][[fold]], c(1,3,4,7,10,12,17,64, 82)]
 
-        return(dc[,c(1,3,4,7,10,12,17,64, 82)])
+        ## set training and testing sets
+        dc_train <- dc[-cv_list[[trtmnt]][[fold]], ]
+        dc_test <- dc[cv_list[[trtmnt]][[fold]], ]
 
         ## build model
-        m <- try(glmer(f, data = dc_train, family = "binomial"), silent = TRUE)
+        m <- try(glmer(f, data = dc_train, family = "binomial"), silent = FALSE)
         if (identical(class(m), "try-error")) {
             ##warning(paste(type, trtmnt, bin, fold, sep =" "))
             data.frame("COR" = NA)
         } else {
 
-            ## I'm going to hack hard.
-            ## mm <- model.matrix(terms(m), dc_test)
-            ## shared <- intersect(colnames(mm), names(fixef(m)))
-            ## fxdef <- fixef(m)[shared]
-            ## preds <- try(mm %*% fxdef, silent = TRUE)
-            ## if (identical(class(preds), "try-error")) {
-            ##     ##warning(paste(type, trtmnt, bin, fold, sep =" "))
-            ##     return(data.frame("COR" = NA))
-            ## } else {
             preds <- try(predict(m,
                                  newdata = dc_test,
                                  type = "response",
-                                     re.form = NULL))
-            if (identical(preds, "try-error")) {
+                                     re.form = NULL), silent = FALSE)
+            if (identical(class(preds), "try-error")) {
+                warning(paste(type, trtmnt, bin, fold, sep = " "))
                 data.frame("COR" = NA)
             } else {
                 actual <- na.omit(dc_test$DmgNOW / dc_test$Tot_Nuts)
@@ -1505,12 +1496,42 @@ RunTrialWithOpts2 <- function(type,
         m <- try(glmer(f, data = dc, family = "binomial"), silent = FALSE)
         if (identical(class(m), "try-error")) {
             warning(paste(type, trtmnt, bin, sep =" "))
-            data.frame("AIC" = NA) ##, "COR" = NA))
+            data.frame("AIC" = NA)
         } else {
             data.frame("AIC" = AIC(m))
         }
     }
 }
+
+
+testRunTrialWithOpts2 <- function(K = 5, parallel = FALSE) {
+    cv_list <- dlply(dmg, .(trt2), FoldData, k = K, seed = 10)
+    seas.bins <- ddply(c, .(Year, Ranch, Block), BinSeason, num.bins = 5)
+    dmg_sets <-  dlply(dmg, .(trt2), merge, y = seas.bins,
+                       by = c("Year", "Ranch", "Block")) 
+    val.grid <- list(c("M", "F", "E"), c("EMD", "ECMD", "CONV", "LMD", "LCMD"),
+                     0:5, 1:K)
+    val.grid <- expand.grid(val.grid, stringsAsFactors = FALSE)
+    colnames(val.grid) <- c("type", "trtmnt", "bin", "fold")
+
+    if(parallel){
+        registerDoMC(cores = 4)
+
+        par_opts = list(
+            .export = c("dmg_sets", "cv_list"),
+            .packages = c("lme4"))
+        
+        results <- mdply(val.grid,
+                         RunTrialWithOpts2,
+                         .parallel = TRUE,
+                         .paropts = par_opts,
+                         .inform = TRUE)
+    } else {
+        results <- mdply(val.grid, RunTrialWithOpts2, .progress = "text")
+    }
+}
+
+
 
 aic.boot.fn <- function(data, index, f){
     ## @Function aic.boot.fn
@@ -1534,7 +1555,7 @@ MakeIndices <- function(tmnt, num = 10){
     i <- replicate(num, sample(1:nrow(df), nrow(df), rep = TRUE))
 }
 
-FoldRows <- function(df, k = 5, random = TRUE, seed = NULL){
+FoldData <- function(df, k = 5, random = TRUE, seed = NULL){
     ## @Function FoldData
     ## @Params:
     ##   - df dataframe: data to be used for CV
