@@ -3448,3 +3448,37 @@ practice <- data.frame( A = c("a","b","c"), B = c("m", "n", "o"), C = c(1,2,3))
 practice[,c("A","B")] <- lapply(practice[,c("A","B")], as.factor)
 
 dmg[, c("loc", "Plot", "Variety")] <- lapply(dmg[, c("loc", "Plot", "Variety")], as.factor)
+
+## parallel works, cv works. woo!
+
+test1 <- ddply(test1, .(type, trtmnt, bin), transform, varCOR = var(COR, na.rm = TRUE))
+
+test1 <- ddply(test1, .(type, trtmnt, bin), transform, sdCOR = sd(COR, na.rm = TRUE))
+
+
+ggplot(res, aes(x = bin, y = meanCOR)) + geom_point(size = 2) + facet_grid(trtmnt ~ type) + geom_errorbar(aes(ymax = meanCOR + sdCOR, ymin = meanCOR - sdCOR))
+
+## 1/26/15 ##
+
+res <- testRunTrialWithOpts2(K = 10, bins = 2, parallel = TRUE)
+
+## Just showed Jay the results. He wasn't stoked. I was excited about the tiny
+## improvement trap catches appear to contribute. He said they are nowhere enough:
+## pesticide applications have simply become so cheap, that unless we can prove
+## that it is more efficient to sample insect traps and spray selectively, farmers
+## will simply spray more and forget about the insect traps. That is simply the
+## more economical decision. Yikes.
+
+## so now I'm going to do a couple of things. I'm going to look at the block effect
+## to see if fixed vs random makes a difference to my predictions.
+
+## then I'm going to build a real predictive model, one without a year effect.
+## that way we will be able to see how useful trap catch counts are.
+
+## finally I'm going to do run exactly the same experiment I've been doing, but
+## this time run  model without trap catch at all, then use the residuals in
+## another model where trap catch is the only predictor. I don't know enough
+## about statistics to understand the difference, but we'll see.
+
+
+
