@@ -1,9 +1,7 @@
 ##---- General Use ----##
 
-## functions:
-source("../almond/R/functions.R")
-
-## packages:
+## functions & packages:
+source("../almond/R/shellFunctions.R")
 source("../almond/R/libs.R")
 
 ######## 10.2.14 ########
@@ -3479,6 +3477,5 @@ res <- testRunTrialWithOpts2(K = 10, bins = 2, parallel = TRUE)
 ## this time run  model without trap catch at all, then use the residuals in
 ## another model where trap catch is the only predictor. I don't know enough
 ## about statistics to understand the difference, but we'll see.
-
 
 
