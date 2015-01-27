@@ -1,0 +1,801 @@
+
+##----- General use -----##
+
+## 10.22.14
+`%ni%` <- Negate(`%in%`)
+
+####### 10.1.14 #########
+
+tojd <- function(d){
+     require(chron)
+	julian.dates <- sapply(d,function(x){ 
+	     
+				mdy <- unlist(strsplit(as.character(x),"/"))
+				mdy <- as.numeric(mdy)
+                                if(mdy[3] < 2000){mdy[3]=mdy[3]+2000}
+				jd <- julian(mdy[1],mdy[2],mdy[3])
+				## 2009 != 09 !!! 
+				return(jd)
+				}
+				
+				)
+	return(julian.dates)
+    }  
+
+
+##------------------------ 10.7.14 ------------------------###
+
+
+## Update: I spoke with Jay and he pointed out
+## a problem with using regression as I have done, and with my analysis
+## in general. First, I will need to look at a bunch of plots showing
+## the individual effects of sprays on block populations, but his
+## reasoning is clear: what we expect to see in such a plot is a
+## plateau over some period of time, followed by a severe drop in the
+## population (at the time of the spray) proceded by a gradual growth
+## back to capacity. One problem with my analysis is that if the
+## spray occurred in the middle of a 7 day trap sampling cycle (on the plateau), it
+## would appear that no change in the population occurred (I feel like
+## pulling counts from 10 days before and after addresses this, but I
+## need to check regardless). As for regression, Jay didn't think it was
+## the best idea for a number of reasons: the inconsistency of the data
+## could distort the slope considerably; the risk of being on a plateau
+## could do the same; and ultimately, he says farmers really don't
+## think in those terms (fascinating!), but instead in percent change.
+
+## So, obejectives now: look at some plots! write a function that will
+## take a line from p_NOW and return a time series of counts before
+## and after that date (The work is pretty much done!). Then pick out
+## as many rows as you can handle and peruse the outputs!!
+
+##-------------------------------------------------------------------##
+##
+## @Function shell.4: (removed, see vis.blockpop)
+
+## I'm going to take a line from
+## p_NOW, pull out ranch, spray date, and blocks affected. Then I'm
+## going to determine the location (l or s) using the ranch, and loop
+## through the blocks (I've set up the database so that there is only ever on block
+## now, but I'll just keep the functionality around in case I ever want to reuse it
+## somewhere). With each block I'll build a pared down version of l or s
+## containing count data from within that block that was collected
+## within 30 days of the spray date. I'll then plot the counts vs the
+## date and hope to see some cool results.
+
+
+# @Helper-Function shell.4a
+# This function returns row values in which sample dates are within 30 days of
+# the spray date and which were also taken from the correct block.
+
+
+
+
+##------------------------ 10.13.14 ------------------------##
+#
+# @Function shell.3 (removed, see eval.efficacy)
+#
+## This function takes a row from the pesticide database and a method value 'm'. It
+## uses the information in that row to find the trap counts within three weeks of that
+## particular spray's date. Then, depending on the choice of m ('p' or 't') the
+## finds either the proportion change or the t statistic using before and after
+#counts. It then outputs that number. 
+## 
+## A few things of note: trap count dates are included iff they occur at least seven
+## days after the spray or one day before the spray. We decided that including any
+## counts that occurred within a week of the spray would be hard to justify. Also,
+## in the 'p' context, if a count is 0, we replace it with 1/length(opposite count).
+## This ensures the ratio has the proper magnitude. 
+
+
+
+## @Function proportion
+## finds the quotient of the two values entered with some tweaks
+## i.e. adjusting means of 0 so that we get an informative (if not exactly
+## accurate ? ? ? ? ) result.
+
+proportion <- function(n_before,n_after){
+        
+    b <- mean(n_before)
+    a <- mean(n_after)
+        
+    proportion <- (a + .1) / (b + .1) ## ad hoc
+    p <- round(proportion,3)	
+    return(p)
+    
+}
+
+
+
+##------------------------ 10.21.14 ------------------------##
+    
+## @Function shell.5:
+## Starting with a spray date, look at the pre-spray insect levels. If they are
+## above some significant amount, chart the "amount of time" for their post-spray
+## to return to (50%? 100%?) of the pre-spray levels.
+
+## shell.5 <- function(row,sig_amnt=4){
+
+##     row <- unlist(row)
+    
+##     ranch <- row[1]
+##     date.jd <- as.numeric(row[15])
+##     block <- row[6]
+
+    
+##     ## the indices of rows containing count values within the
+##     ## appropriate range:
+
+##     i_before <- which(
+##         c$Block == block &
+##         c$Ranch == ranch &
+##         (date.jd - c$JD <= 14 & date.jd - c$JD >= 1 ) &
+##         !is.na(c$Males) &
+##         c$TrapType %in% c("Phero","Flight","LurePhero")
+##         )
+    
+##     ## if this vector has length zero, return NA:
+##     if(length(i_before)==0){
+##         return(NA)
+##     }
+
+##     ## otherwise, continue with computation:
+##     else{
+
+##         pop_before <- c$Males[i_before]
+                            
+        
+##         ## Determine if mean is greater than some significant amount
+##         pre_mean <-  mean(pop_before)
+        
+##         interval <-  NA
+##         if(pre_mean > sig_amnt){
+            
+##             ## if so
+##             bin <- 7
+##             interval <- shell.5a(
+##                 date.jd,
+##                 c[which(c$Ranch==ranch & !is.na(c$Males)),],
+##                 sig_amnt,
+##                 block,
+##                 bin
+##                 )
+##         }
+
+##         return(interval)
+##     }
+
+## }
+
+
+## @Function shell.5a:
+## Report amount of time for population to achieve sig_prcnt.
+
+## shell.5a <- function(j.day, loc, sig_amnt, block, bin){
+    
+##     ## knowing the year is important:
+##     require("chron")
+##     year <- month.day.year(j.day)[[3]]
+    
+##     indices <- which(
+##         loc$JD > j.day &
+##         loc$Year == year &
+##         loc$Block == block
+##         )
+    
+##     day_max <- max(loc$JD[indices])
+##     day_min <- min(loc$JD[indices])
+
+##     dates = seq(day_min,day_max, by = bin)
+##     intervals = sapply(dates,
+##         function(x){
+
+##             day1 = x
+##             day2 = x + bin
+            
+##             i <- which(
+##                 day1 <= loc$JD &
+##                 loc$JD <= day2 &
+##                 loc$Block == block &
+##                 loc$TrapType %in% c("Phero","Flight","LurePhero")
+##                 )
+
+##             if(length(i)==0){return(NA)}
+
+##             mean <-  mean(loc$Males[i])
+
+##             if(mean >= sig_amnt){return(day2 - j.day)}
+##             else{return(day_max-j.day)}
+##         })
+
+##     return(min(intervals[!is.na(intervals)]))  
+
+## }
+
+##------------ 10.23.14 -------------##
+
+## @Function blockav.
+## function takes bin - a time period (7 days, 14 days, etc)
+## and returns a vector of the average number of insects
+## per insect-infested block over that period of time, sorted by
+## the period when it took place - nice. 
+
+## blockav <- function(bin,phero = "t"){
+
+##     days <- unique(c$JD)[which(!is.na(unique(c$JD)))]
+##     days <- sort(days)
+    
+##     bav <- sapply(days,
+##         function(x){
+            
+##             i <- switch(phero,
+##                 "f" = which(
+##                     (c$JD - x <= bin & c$JD - x >= 0) &
+##                     c$TrapType %in% c("Flight","LurePhero") &
+##                     !is.na(c$Males)
+##                     ),
+##                 "t" = which(
+##                     (c$JD - x <= bin & c$JD - x >= 0) &
+##                     c$TrapType %in% c("Phero","Flight","LurePhero") &
+##                     !is.na(c$Males)
+##                     )
+##                 )
+##             if(length(i)==0){
+##                 return(NA)
+##             }
+##             ## Then I want to know what blocks had measurements:
+##             blocks <- c$Block[i]
+##             ## and I want to know what the densities were:
+##             insects <- c$Males[i]
+
+##             ## Then I'll return the sum of the insects divided
+##             ## by the number of blocks
+
+##             return(sum(insects)/length(blocks))
+##         })
+##     return(bav)
+## }
+
+##------------- 10.24.14 --------------##
+
+## @function view_proportion:
+## Quick little wrapper to view proportion graph given a threshold
+## view_proportion <-  function(t = 3,r = "mean", b = 7){
+    
+##     prop = apply(d2,1,function(x){shell.3(x,thresh = t,route = r, bin = b)})
+##     prop = t(prop)
+##     prop = data.frame(prop,d2$Day.Month)
+##     colnames(prop) = c("proportion","weight","Day.Month")
+##     wi = as.factor(prop$weight)
+##     prop$weight = wi
+##     prop$Year = d2$Year
+##     w = ggplot(prop,aes(Day.Month, log(proportion), color=Year,shape=weight)) + geom_point(size=3)
+##     w.lab = w + theme(axis.text.x = element_text(angle = 90, hjust = 0)) ## works
+##     w.lab
+
+## }
+
+
+## @function vis_blockpop:
+## takes a block and spits out a time series of trap counts for each year
+## Dependencies: d1 and c
+vis_blockpop <- function(index,t="m",year=NA){
+
+    require(ggplot2)
+    require(gridExtra)
+    
+    ## Gather the unique block/ranch pairs:
+    br = apply(c,1,
+        function(x){
+            return(c(x[4],x[2]))
+        })
+    br = t(br)
+    br = unique(br)
+
+    ## set the current block/ranch by index requested:
+    block = br[index,1]
+    ranch = br[index,2]
+    
+    ## What years did this block appear in?
+    if (is.na(year)){
+        years = c$Year[which(c$Block == block & c$Ranch == ranch)]
+        years = sort(unique(years[which(!is.na(years))]))
+    } else {
+        years = c(year)
+    }
+
+    ## Yup there's some overlap in blocks:
+    ranch_sites = unique(p.n$Site[which(p.n$Ranch == ranch)])
+
+    ## What site is this block in?
+    site_bool = sapply(1:length(dict),
+        function(y){
+            return(block %in% names(dict[[y]]) & names(dict)[y] %in% ranch_sites)
+        }
+        )
+
+    site = names(dict)[which(site_bool == TRUE)]
+    ##print(paste0("site: ", site))
+
+
+    trap.sites = dict[[site]][[block]]
+    ##print(paste0("trap sites: ", trap.sites))
+    plots <- lapply(years,function(x){
+
+            
+        ## What row indices (c) hold insect counts for this block/year?
+        ## we have to include block because some of the sites migrate from
+        ## year to year (59 & 60)
+        i = which(c$Block == block & c$TrapSite %in% trap.sites & c$Year == year) 
+        
+        c_pop = c[i,]
+
+        puff.data = c_pop[1,c('MD','Puffers','Rep')]
+        puff.data = paste("MD: ",puff.data[1], ", Puffers: ",puff.data[2],", Rep :",puff.data[3],collapse="")
+        ##print(puff.data)
+        
+        ## What row indices (d1) hold puffer sprays for this block/year?
+        i_pufs = which(
+            puf.db$Site == site &
+            puf.db$Year == year &
+            puf.db$Block.s. == block      
+            )
+
+        
+        ## What row indices (d1) hold non-puffer sprays for this block/year?
+        i_sprays = which(
+            p.n$Site == site &
+            p.n$Year == year &
+            p.n$Product..Agrian. != "Puffer NOW" &
+            (grepl(block,p.n$Block.s.) | p.n$Block.s. == " ")      
+            )
+
+        ## create plots
+        q =  switch(t,
+            m = ggplot(c_pop,aes(DayOfYear,Males,color=TrapType,shape=Loc)),
+            f = ggplot(c_pop,aes(DayOfYear,Females,color=TrapType,shape=Loc)),
+            e = ggplot(c_pop,aes(DayOfYear,Eggs,color=TrapType,shape=Loc))
+            )
+        q = q + geom_point(size=5) + ggtitle(paste(block,site,x,sep=", "))
+        ## rotate x_labels:
+        q = q + theme(axis.text.x = element_text(angle = 90, hjust = 0))
+
+
+        if(length(i_pufs) != 0){
+            q = q + geom_vline(
+                xintercept= puf.db$DayOfYear[i_pufs],
+                colour = "blue",
+                linetype = "longdash")
+            
+        }
+        if(length(i_sprays) != 0){
+            q = q + geom_vline(
+                xintercept= p.n$DayOfYear[i_sprays],
+                colour="red",
+                linetype="longdash")
+            
+        }
+        
+        file = switch(t,
+            m = paste0("../almond/males/",block,"_",ranch,"_",year,".pdf"),
+            f = paste0("../almond/females/",block,"_",ranch,"_",year,".pdf"),
+            e = paste0("../almond/eggs/",block,"_",ranch,"_",year,".pdf")
+            )
+
+        ggsave(filename = file, plot = q)
+        ##return(q)
+    })
+
+    ## print plots (this requires gridExtra):
+    ##do.call(grid.arrange,plots)
+
+}
+
+## @Function get.number.edges - Will write later
+get.number.edges <- function(ranch,block){
+
+    two.Edges.lh = c("2-2","1-2","1-4","25-4","30-3","30-4","30-1")
+    zero.Edges.lh = c("2-4","1-3","11-1","12-2","12-3","13-2","13-3")
+    two.Edges.sf = c("25-2","36-3","31-4","29-3","30-1")
+    zero.Edges.sf = c("25-4","30-3","30-4","36-1","31-2")
+    three.Edges = c("29-4")
+    
+    edges = 1
+
+    if(ranch %in% c("344","345","346","439")){
+        if(block %in% two.Edges.lh){ edges = 2 }
+        if(block %in% zero.Edges.lh){ edges = 0 }
+    }else{
+        if(block %in% two.Edges.sf){ edges = 2}
+        if(block %in% zero.Edges.sf){ edges = 0}
+        if(block %in% three.Edges){edges = 3}
+    }
+
+    return(edges)
+}
+
+
+## @Function get.treatment
+get.treatment <- function(ranch,block,year){
+    
+      treatment = c$Trtmnt[which(
+        c$Block == block &
+        c$Ranch == ranch &
+        c$Year == year
+        )]
+
+      treatment = unique(treatment)
+      return(treatment)
+}
+
+## @Function get.prior.sprays during the focal year
+get.prior.sprays <- function(df,date, year, site, block){
+    
+    spray.dates = df$JD[which(
+        df$Site == site &
+        (grepl(block,df$Block.s.) |
+         df$Block.s. == " ") &
+        df$Year == year
+        )]
+    number = length(which(spray.dates < date))
+    return(number)
+}
+
+## @Function get.total.prior.sprays
+## get # of sprays that block has seen throughout the whole experiment
+get.total.prior.sprays <- function(df,date,site,block){
+
+    spray.dates = df$JD[which(
+        df$Site == site &
+        (grepl(block,df$Block.s.) |
+         df$Block.s. == " ")
+        )]
+    number = length(which(spray.dates < date))
+    return(number)
+}
+
+
+## @Function get.blocks
+get.blocks <- function(block_text,site) {
+    if (block_text == " "){
+        blocks = names(dict[[as.character(site)]])
+    }else{
+        blocks = unlist(strsplit(block_text,","))
+    }
+
+    return(blocks)
+}
+
+## @Function get.trapsites
+get.trapsites <- function(block,site) dict[[as.character(site)]][[block]]
+
+
+## @Function get.prespray.count.index
+get.postspray.count.index <- function(ranch,trapsites,date,bin) {
+
+    ## could do something like abs( (date + bin + 7) - c$JD ) <= bin
+    which(
+        c$Ranch == ranch &
+        (c$JD - date <= (14 + bin) & c$JD >= date + 7 ) &
+        c$TrapType %in% c("Phero","Flight","LurePhero") &
+        c$TrapSite %in% trapsites
+        )
+}
+
+## @Function get.postspray.count.index
+get.prespray.count.index <- function(ranch,trapsites,date,bin) {
+
+    ## could do something like abs( (date - bin - 1) - c$JD ) <= bin
+    which(
+        c$Ranch == ranch &
+        (date - (8 + bin) <= c$JD & c$JD < date ) &
+        c$TrapType %in% c("Phero","Flight","LurePhero") &
+        c$TrapSite %in% trapsites
+        )
+}
+
+## @Function get.count
+get.count <- function(type,indices) {
+    switch(type,
+           m = c$Males[indices],
+           f = c$Females[indices],
+           e = c$Eggs[indices]
+           )
+    
+}
+
+
+## @Function puffer.dates.for.block
+puffer.dates.for.block <- function(site,block,year) {
+
+    new.set = subset(puf.db,
+        Site == site &
+        Block.s. == block &
+        Year == year
+        )
+
+    return(new.set$JD)
+
+}
+
+## @Function spray.dates.for.block
+spray.dates.for.block <- function(site,block,year){
+
+    new.set = subset(p.n,
+        Site == site &
+        (grepl(block,Block.s.) | Block.s. == " ") &
+        Year == year &
+        Product..Agrian. != "Puffer NOW"
+        )
+
+    return(new.set$JD)
+}
+
+## @Function eval.efficacy. 
+## Uses the data contained in p.n.p (or its siblings), c, and puf.db
+## to measure spray efficacy. This is done by selecting out each unique
+## block-spray combination, finding the pre & post spray insect densities
+## for that combination, then finding the proportion of the post to pre
+## spray means. This information is augmented with: the # of exterior edges
+## that block has; # of prior sprays on that block for the given year;
+## # of prior sprays on that block througout the entire experiment; the
+## mean insect population prior to the spray; and the treatment the block
+## is undergoing that year.
+
+eval.efficacy <- function(df = p.n.p, type="m", route = "mean", bin = 7){
+
+    require(plyr)
+    
+    if ( type %ni% c("m", "f", "e") ) {
+        stop("Please choose a valid type")
+    }
+
+    temp = df
+    temp$MeanPopBeforeSpray <- NA
+    temp$Proportion <- NA
+    temp$Edges <-  NA
+    temp$PriorSprays <- NA
+    temp$Treatment <- NA
+    temp$TotalPriorSprays <- NA
+    
+    ef.dat = do.call(rbind, lapply(1:dim(temp)[1],function(i){
+
+        site <- temp$Site[i]
+        blocks <- temp$Block.s.[i]
+        year <- temp$Year[i] 
+        
+        ## gather up the relevant blocks:
+
+        blocks = get.blocks(blocks,site)
+
+        ## yes, we need this because of block overlap:
+        ranch <- temp$Ranch[i]
+        date.jd <- temp$JD[i]
+
+        ## now go through each block and look at
+        ## trap catches before/after the spray date.
+        ## Use these to produce "proportion" and "weight"
+        
+        site.rows <- do.call(rbind,lapply(blocks,function(block){
+
+            ## first let's check if a puffer was turned on within
+            ## the time-bin of the spray:
+            puf.dates = puffer.dates.for.block(site, block, year)
+
+            test = length(which(abs(date.jd - puf.dates) <= (14+bin)))
+
+            if(test != 0){
+                ##print("block skipped due to puffer prox")
+                row = temp[i,]
+                row$Block.s. = block
+                return(row)
+            }
+
+            ## Get the trap sites for the block:
+            trapsites = get.trapsites(block,site)
+            
+            ## Now,
+            ## Select the range of insect-sample dates based on
+            ## the julian date of the pesticide spray:
+            i_before <- get.prespray.count.index(ranch,
+                                                trapsites,
+                                                date.jd,
+                                                bin)
+            
+            i_after <- get.postspray.count.index(ranch,
+                                                  trapsites,
+                                                  date.jd,
+                                                  bin)
+                
+            ## Select the actual catches:
+            pop_before = get.count(type, i_before)
+            pop_after = get.count(type, i_after)
+            
+            ## if we allow na's to hang around then we can't take
+            ## a mean
+            pop_before = subset(pop_before, !is.na(pop_before))
+            pop_after = subset(pop_after, !is.na(pop_after))
+            
+            ## if at this point there's no data, regur some na's:
+            if( length(pop_after) == 0 | length(pop_before) == 0 ){
+
+                ##print("row skipped due to lack of data")
+                row = temp[i,]
+                row$Block.s. = block
+                return(row)
+            } else {
+            
+                ## this will tell our regression whether our proportion value
+                ## is worth listening to (right?):
+                weight <-  mean(pop_before)
+                
+                ## find proportion:
+                proportion <- proportion(pop_before,pop_after)
+
+                ## create row:
+                row = temp[i,]
+                row$MeanPopBeforeSpray = weight
+                row$Proportion = proportion
+                row$Block.s. = block
+                row$Edges = get.number.edges(ranch,block)
+                row$Treatment = get.treatment(ranch,block,year)
+                row$PriorSprays = get.prior.sprays(
+                    df,
+                    date.jd,
+                    year,
+                    site,
+                    block)
+                row$TotalPriorSprays = get.total.prior.sprays(
+                    df,
+                    date.jd,
+                    site,
+                    block)
+                return(row)
+
+            }
+        }))
+        return(site.rows) 
+    }))    
+
+    return(ef.dat)
+}    
+    
+## This was the worst:
+##
+
+clean.blocks <-  function(blocks){
+    if ("3-Jan" == blocks){return("1-3")}
+    if ("4-Nov" == blocks){return("11-4")}
+    if ("2-Jan" == blocks){return("1-2")}
+    if ("02-3,02-4" == blocks){return("2-3,2-4")}
+    if ("02-1,02-2,02-3,02-4" == blocks){return("2-1,2-2,2-3,2-4")}
+    if ("02-1,02-2" == blocks){return("2-1,2-2")}
+    if ("02-1,02-3,02-4" == blocks){return("2-1,2-3,2-4")}
+    if ("2-Feb" == blocks){return("2-2")}
+    if ("01-1,01-2" == blocks){return("1-1,1-2")}
+    return(blocks)
+}
+
+
+## Then the other task for today is to start pinning down
+## a measure of trap shutdown. That will take a function
+## quite similar to eval.efficacy(). Things I need to watch
+## out for: (1) my first pop measurment MUST be before any sprays
+## or puffers are applied and (2) my second measurement must
+## be after the FIRST puffer of the season (if there are multiple)
+## but BEFORE the first spray of the season.
+
+## this function will be much easier once puf.db.by.block is complete.
+
+eval.trap.shutdown <- function(bin = 14){
+
+    ## Make a temporary DF with the columns we want
+    temp = puf.db
+    temp$Proportion <-  NA
+    temp$MeanPopBeforeMD <- NA
+    temp$Edges <- NA
+
+    ## pull a lapply do-call combo on the rows of temp
+    ts.db = do.call(rbind,lapply(1:dim(temp)[1],function(i){
+
+        ## pull out the info we need, convert as necessary
+        block = temp$Block.s.[i]
+        ranch = temp$Ranch[i]
+        site = temp$Site[i]
+        year = temp$Year[i]
+        date = temp$JD[i]
+
+        ## find all puffer dates for that year,block,site
+        puf.dates = puffer.dates.for.block(site,block,year)
+
+        ## find all non-puffer spray dates for that year,block,site
+        spray.dates = spray.dates.for.block(site,block,year)
+       
+        if(length(spray.dates) == 0 ){
+            earliest.spray.date = date + bin + 7
+        }else{
+            earliest.spray.date = min(spray.dates)
+            
+            ## Check for non-MD applications that came before
+            ## the MD was turned on:
+            if( earliest.spray.date < date){
+                if(date - earliest.spray.date < 2 * bin){
+                    row = temp[i,]
+                    return(row)
+                }else{
+                    earliest.spray.date = date + bin + 7
+                }            
+            }
+            
+        }
+        
+        ## if this isnt the first puffer, or there was a spray
+        ## before it, return a row with $Proportion as NA
+        if (date != min(puf.dates) ) {
+            row = temp[i,]
+            return(row)
+        }else{
+
+            ## Since this was the fist puffer and no spray came
+            ## before it, let's look at its effect on trap shutdown:
+            
+            ## grab the relevant trapsites
+            trapsites = dict[[as.character(site)]][[block]]
+
+            ## determine the cutoffs for the trap sample dates we want
+            cutoffmin =  date - bin
+            cutoffmax = min(earliest.spray.date, date + 7 + bin)
+
+            ## find the pre and post spray samples according to
+            ## the cutoffs,trapsites,traptypes, etc we want
+            pre.spray = c$Males[which(
+                c$Ranch == ranch &
+                c$Block == block & ##redundant
+                (c$JD < date & c$JD >= cutoffmin) &
+                c$TrapType %in% c("Phero","Flight","LurePhero") &
+                c$TrapSite %in% trapsites
+                )]
+
+            
+            
+            post.spray = c$Males[which(
+                c$Ranch == ranch &
+                c$Block == block & ##redundant
+                (c$JD >= date + 7  & c$JD <= cutoffmax) &
+                c$TrapType %in% c("Phero","Flight","LurePhero") &
+                c$TrapSite %in% trapsites
+                )]
+
+           
+            ## if there's a na in there remove it
+            pre.spray = subset(pre.spray,!is.na(pre.spray))
+            post.spray = subset(post.spray,!is.na(post.spray))
+
+
+            ## if either vector has length 0 we can't calculate
+            ## anything
+            if(length(post.spray) == 0 | length(pre.spray) == 0){
+                row = temp[i,]
+                return(row)
+            }else{
+                row = temp[i,]
+                mean.before.spray = mean(pre.spray)
+
+                ## if there are no bugs then we can't measure
+                ## the effect of the MD...
+                if (mean.before.spray == 0) {
+                    row = temp[i,]
+                    return(row)
+                }
+                
+                row$MeanPopBeforeMD = mean.before.spray 
+                row$Proportion = proportion(pre.spray,post.spray)
+                row$Edges = get.number.edges(ranch,block)
+                return(row)
+            }  
+            
+        }
+        
+    }))
+
+    return(ts.db)
+}
