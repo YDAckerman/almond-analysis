@@ -2,19 +2,20 @@
 
 ## functions & packages:
 source("../almond/R/shellFunctions.R")
+source("../almond/R/testFunctions.R")
 source("../almond/R/libs.R")
 
 ######## 10.2.14 ########
 
 db = sapply(unique(SF$TrapSite),function(x){
-    
+
     eggs = as.numeric(levels(SF$Eggs))[SF$Eggs]
     females = as.numeric(levels(SF$Females))[SF$Females]
     males = as.numeric(levels(SF$Males))[SF$Males]
 
     av_eggs =
         mean(eggs[!is.na(eggs[which(LHR$TrapSite == x)])])
-    
+
     av_fem = 
         mean(females[which(LHR$TrapSite == x)])
 
@@ -24,7 +25,7 @@ db = sapply(unique(SF$TrapSite),function(x){
     av_adults =
         mean((males+females)[which(LHR$TrapSite
                                    == x)])
-    
+
     ans = c(av_eggs,av_fem,av_mal,av_adults,x)
 
     return(ans)

@@ -50,11 +50,11 @@ RunParametricCV <- function(type,
     }
 
     ## response term
-    switch( resp,
-           D = response.term <- "cbind(DmgNOW, Tot_Nuts - DmgNOW)",
-           I = response.term <- "cbind(InfNOW, Tot_Nuts - InfNOW)",
-           ID = response.term <- "cbind(DmgNOW, InfNOW - DmgNOW)",
-           )
+    response.term <- switch( resp,
+                            D = "cbind(DmgNOW, Tot_Nuts - DmgNOW)",
+                            I = "cbind(InfNOW, Tot_Nuts - InfNOW)",
+                            ID = "cbind(DmgNOW, InfNOW - DmgNOW)",
+                            )
 
     ## general predictors
     if (is.null(fold)) {
@@ -63,7 +63,7 @@ RunParametricCV <- function(type,
         other.terms <- " ~ "
     }
 
-    other.terms <- paste0(other.terms,"(1|Year) + (1|Block)")
+    other.terms <- paste0(other.terms,"(1|Year) + (1|Block/Ranch)")
     other.terms <- paste0(other.terms," + Plot + Variety + tree_age")
     if (!grepl("L", trtmnt)) { other.terms <- paste0(other.terms," + loc") }
 
@@ -212,23 +212,22 @@ RunParametricCVwithResiduals <- function(type,
     ## Selecting the right dataset to use
     dc <- dmg_sets[[trtmnt]]
 
-    ## response term
-    switch( resp,
-           D = response.term <- "cbind(DmgNOW, Tot_Nuts - DmgNOW)",
-           I = response.term <- "cbind(InfNOW, Tot_Nuts - InfNOW)",
-           ID = response.term <- "cbind(DmgNOW, InfNOW - DmgNOW)",
-           )
+    ## create formula from chars
+    f <- switch( resp,
+        D = "cbind(DmgNOW, Tot_Nuts - DmgNOW)",
+        I = "cbind(InfNOW, Tot_Nuts - InfNOW)",
+        ID = "cbind(DmgNOW, InfNOW - DmgNOW)",
+        )
 
-    other.terms <- paste0(other.terms," ~ (1|Year) + (1|Block)")
-    other.terms <- paste0(other.terms," + Plot + Variety + tree_age")
+    f <- paste0(f," ~ (1|Year) + (1|Block) + Plot + Variety + tree_age")
 
     ## So long as we aren't doing LMD/LCMD we can add a variable
     ## for location:
 
-    if (!grepl("L", trtmnt)) { other.terms <- paste0(other.terms," + loc") }
+    if (!grepl("L", trtmnt)) { f <- paste0(f," + loc") }
 
     ## create formula
-    f <- as.formula(paste0(response.term, other.terms))
+    f <- as.formula(f)
 
     ## model to account for other predictors
     m1 <- try(glmer(f, data = dc, family = "binomial"), silent = FALSE)
@@ -241,34 +240,26 @@ RunParametricCVwithResiduals <- function(type,
         ## now we test to see how much variance is explained
         ## by the season bin:
 
-        if (bin == 0) {
+        if (bin != 0) {
             res_df <- data.frame(
-                RES = residuals(m),
-                BIN = NA
+                RES = residuals(m1),
+                BIN = dc[, paste0(type, bin)]
                 )
-        } else {
-            res_df <- data.frame(
-                RES = residuals(m),
-                BIN = df[, paste0(type, bin)]
+
+            rtrain <- res_df[-cv_list[[trtmnt]][[fold]], ]
+            rtest <- res_df[cv_list[[trtmnt]][[fold]], ]
+
+            ## New model with bin in mind:
+            m2 <- lm(RES ~ BIN, data = rtrain)
+
+            ## Make predictions:
+            preds <- predict(
+                m2,
+                newdata = rtest
                 )
+
+            data.frame(COR = cor(preds, rtest$RES))
         }
-
-        rtrain <- res_df[-cv_list[[trtmnt]][[fold]], ]
-        rtest <- res_df[cv_list[[trtmnt]][[fold]], ]
-
-        ## New model with bin in mind:
-        m2 <- switch(as.character(bin),
-                     "0" = lm(residuals(m) ~ 1, data = rtrain),
-                     lm(RES ~ BIN, data = rtrain)
-                     )
-
-        ## Make predictions:
-        preds <- predict(
-            m2,
-            newdata = rtest
-            )
-
-        data.frame(COR = cor(preds, rtest$RES))
     }
 }
 
