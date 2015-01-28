@@ -1,3 +1,10 @@
+## These are test functions. They help me mess with the parameters
+## and conditions I use with my main 'wrapper' functions.
+
+## wrapper functions
+source("../almond/R/shellFunctions.R")
+
+
 testRunParametricCV <- function(K = 5, bins = 5, parallel = FALSE) {
 
     cv_list <- dlply(dmg, .(trt2), FoldData, k = K, seed = 10)
@@ -10,7 +17,7 @@ testRunParametricCV <- function(K = 5, bins = 5, parallel = FALSE) {
     val_grid <- expand.grid(val_grid, stringsAsFactors = FALSE)
     colnames(val_grid) <- c("type", "trtmnt", "bin", "fold")
 
-    registerDoMC(cores = 4)
+    if (parallel) {registerDoMC(cores = 4)}
 
     par_opts = list(.export = c("dmg_sets", "cv_list"), .packages = c("lme4"))
 
@@ -23,7 +30,6 @@ testRunParametricCV <- function(K = 5, bins = 5, parallel = FALSE) {
                      .paropts = par_opts,
                      .inform = TRUE)
 }
-
 
 
 testRunParameticCVwithResiduals<- function(
