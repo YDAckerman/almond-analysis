@@ -2,7 +2,7 @@
 ## and conditions I use with my main 'wrapper' functions.
 
 ## wrapper functions
-source("../almond/R/shellFunctions.R")
+source("../almond/R/wrapperFunctions.R")
 
 
 testRunParametricCV <- function(K = 5, bins = 5, parallel = FALSE) {
@@ -58,12 +58,13 @@ testRunParameticCVwithResiduals<- function(
     if (parallel) {registerDoMC(cores = 4)}
 
 
-    par_opts = list(.export = c("dmg_sets", "cv_list"))
+    par_opts = list(.export = c("dmg_sets", "cv_list", "res_sets"))
 
     results <- mdply(val_grid,
                      RunParametricCVwithResiduals,
-                     dmg_sets = dmg_sets,
-                     cv_list = cv_list,
+                     ## dmg_sets = dmg_sets,
+                     ## cv_list = cv_list,
+                     ## res_sets = res_sets,
                      .progress = "text",
                      .parallel = parallel,
                      .paropts = par_opts,

@@ -1,7 +1,6 @@
 ##---- General Use ----##
 
 ## functions:
-source("../almond/R/shellFunctions.R")
 source("../almond/R/testFunctions.R")
 
 ######## 10.2.14 ########
@@ -3479,6 +3478,7 @@ res <- testRunTrialWithOpts2(K = 10, bins = 2, parallel = TRUE)
 ## about statistics to understand the difference, but we'll see.
 
 
+## 1/28/15 ##
 ggplot(dmg_sets[["EMD"]], aes(x = parse(text = "M1"), y = DmgNOW/Tot_Nuts)) + geom_point(size = 2)
 
 binterms <- paste0(c("M", "F", "E"), rep(1:2, each = 3))

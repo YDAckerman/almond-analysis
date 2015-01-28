@@ -128,10 +128,10 @@ RunParametricCVwithResiduals <- function(type,
                                          trtmnt,
                                          bin,
                                          fold = NULL,
-                                         resp = "D",
-                                         res_sets = NULL,
-                                         dmg_sets = NULL,
-                                         cv_list = NULL
+                                         resp = "D"##,
+                                         ## res_sets = NULL,
+                                         ## dmg_sets = NULL,
+                                         ## cv_list = NULL
                                          ) {
 
 
@@ -155,15 +155,28 @@ RunParametricCVwithResiduals <- function(type,
     ## require(lme4)
     ## require(AICcmodavg)
 
-    if (is.na(res_sets[[trtmnt]])) {return(data.frame(NA))}
-    if (is.null(cv_list)  || is.null(dmg_sets)){
-        stop("Please add cv_list & dmg_sets")
-    }
+    ## if (is.null(cv_list)  || is.null(dmg_sets || is.null(res_sets))){
+    ##     stop("Please add cv_list & dmg_sets & res_sets")
+    ## }
+
+
+    dmg_sets <- try(get("dmg_sets", envir = parent.frame()))
+    res_sets <- try(get("res_sets", envir = parent.frame()))
+    ##cv_list <- try(get("cv_list", envir = parent.frame()))
+
+    ## classes <- sapply(list(dmg_sets, res_sets, cv_list), class)
+    
+    ## if(identical(classes, rep("try-error", times = 3))) {
+    ##     print(classes)
+    ## } else { print("no errors")}
+
+    stop("done")
+    
     if (bin == 0) { stop("bin = 0; this is an issue")}
 
     res_df <- data.frame(
         RES = res_sets[[trtmnt]],
-        BIN = dc[, paste0(type, bin)]
+        BIN = dmg_sets[[trtmnt]][, paste(type, bin)]
         )
 
     rtrain <- res_df[-cv_list[[trtmnt]][[fold]], ]
