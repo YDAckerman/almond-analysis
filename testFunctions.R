@@ -36,9 +36,9 @@ testRunParameticCVwithResiduals<- function(
     seas_bins <- ddply(c, .(Year, Ranch, Block), BinSeason, num.bins = bins)
     dmg_sets <-  dlply(dmg, .(trt2), merge, y = seas_bins,
                        by = c("Year", "Ranch", "Block"))
-
+    res_sets <- llply(dmg_sets, GetResiduals)
     val_grid <- list(c("M", "F", "E"), c("EMD", "ECMD", "CONV", "LMD", "LCMD"),
-                     0:bins, 1:K)
+                     1:bins, 1:K)
     val_grid <- expand.grid(val_grid, stringsAsFactors = FALSE)
     colnames(val_grid) <- c("type", "trtmnt", "bin", "fold")
 
@@ -48,9 +48,11 @@ testRunParameticCVwithResiduals<- function(
             stop("subset set must be a logical statement in text")
         }
     }
-    registerDoMC(cores = 4)
 
-    par_opts = list(.export = c("dmg_sets", "cv_list"), .packages = c("lme4"))
+    if (parallel) {registerDoMC(cores = 4)}
+
+
+    par_opts = list(.export = c("dmg_sets", "cv_list"))
 
     results <- mdply(val_grid,
                      RunParametricCVwithResiduals,

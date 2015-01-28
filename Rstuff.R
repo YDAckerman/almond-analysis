@@ -1,9 +1,8 @@
 ##---- General Use ----##
 
-## functions & packages:
+## functions:
 source("../almond/R/shellFunctions.R")
 source("../almond/R/testFunctions.R")
-source("../almond/R/libs.R")
 
 ######## 10.2.14 ########
 
@@ -3479,4 +3478,26 @@ res <- testRunTrialWithOpts2(K = 10, bins = 2, parallel = TRUE)
 ## another model where trap catch is the only predictor. I don't know enough
 ## about statistics to understand the difference, but we'll see.
 
+
+ggplot(dmg_sets[["EMD"]], aes(x = parse(text = "M1"), y = DmgNOW/Tot_Nuts)) + geom_point(size = 2)
+
+binterms <- paste0(c("M", "F", "E"), rep(1:2, each = 3))
+vals <- expand.grid(
+    list(trt = c("EMD", "CONV", "ECMD", "LMD", "LCMD"), bin = binterms),
+    stringsAsFactors = FALSE
+    )
+colnames(vals) <- c("trt", "bin")
+
+plotstest <- mlply(vals, .fun = DrawPlot)
+
+DrawPlot <- function(trt = NULL, bin = NULL) {
+
+    if (is.null(trt) || is.null(bin)) return(NA)
+
+    p <- ggplot(dmg_sets[[trt]], aes(x = eval(parse(text = bin)),
+                                     y = DmgNOW/Tot_Nuts))
+    p <- p + geom_point(size = 2)
+}
+
+residuals_set <- llply(dmg_sets, .fun = GetResiduals)
 

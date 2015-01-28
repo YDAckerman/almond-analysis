@@ -771,3 +771,57 @@ eval_trap_shutdown_by_trap <- function(bin = 14){
     return(ts.db)
 }
 
+
+
+## previously RunTrialWithOpts
+RunParametricAIC <- function(type, trtmnt, bins, mod = FALSE, resp = "D"){
+
+    ##require(lme4)
+
+    ## bin the m, f, e count data:
+    seas.bins <- ddply(c, .(Year, Ranch, Block), BinSeason, num.bins = bins)
+
+    ## looks like:
+    ##cnames:        M1 F1 E1 ... Mn Fn En
+    ##data:           . .  .  .    .  .  .
+    ##                . .  .   .   .  .  .
+    ## etc..          . .  .    .  .  .  .
+
+    ## subsetting response var df by what treatment blocks received
+    dc.subset <- subset(dmg, trt2 == trtmnt)
+
+    ## merging the subset with the season bins:
+    dc <- merge(dc.subset, seas.bins, c("Year", "Ranch", "Block"))
+
+    ## create formula:
+    bin.terms <-  paste(paste0(type, seq(bins)), collapse = " + ")
+
+    switch( resp,
+           D = response.term <- "cbind(DmgNOW, Tot_Nuts - DmgNOW)",
+           I = response.term <- "cbind(InfNOW, Tot_Nuts - DmgNOW)",
+           ID = response.term <- "cbind(DmgNOW, InfNOW - DmgNOW)",
+           )
+
+    if( trtmnt == "LMD" ){
+        other.terms <- " ~ (1|ID) + (1|Block) +  Plot + Variety"
+    } else {
+
+        other.terms <- " ~ (1|ID) + (1|Year) + (1|Ranch/Block) + loc + Plot + Variety"
+
+        if( trtmnt == "LCMD" ){
+            other.terms <- " ~ (1|ID) + (1|Year) + (1|Ranch/Block) + Plot + Variety"
+        }
+
+    }
+
+    f <- as.formula( paste0(response.term, other.terms, bin.terms) )
+
+    ## make model:
+    m <- glmer(f, data = dc, family = "binomial")
+
+    if(mod == TRUE){
+        return(m)
+    } else {
+        return( AIC(m) )
+    }
+}

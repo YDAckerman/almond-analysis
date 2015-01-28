@@ -1,5 +1,6 @@
-## source functions
+## source functions & packages
 source("../almond/R/helperFunctions.R")
+source("../almond/R/libs.R")
 
 ## previously RunTrialWithOpts2
 RunParametricCV <- function(type,
@@ -27,17 +28,20 @@ RunParametricCV <- function(type,
     ##    resp - sets the response variable for the models
     ##    grain - set the granularity of the trtmnt parameter
     ##            (pretty hacky, sorry)
+    ##    dmg_sets & cv_list - pushing these into the function as
+    ##                         parameters was the only way I could
+    ##                         figure out to make parallel work.
     ## @Out:
-    ##    The AIC of the model, or the boostrapped AIC of the model
-    ##    *note* the bootstrapped AIC doesn't really have any formal
-    ##           meaning; I'd just like to see what happens, i.e. do
-    ##           strong models stay strong?
-    ## @Depends:
-    ##    dmg - the damage dataframe
-    ##    seas.bins - the season pop averages dataframe
+    ##    -The AIC of the model, or the boostrapped AIC of the model
+    ##        *note* does the bootstrapped AIC really have any formal
+    ##        meaning? I'd just like to see what happens, i.e. do
+    ##        strong models stay strong?
+    ##    -Or the correllation coefficient of the predicted vs. acutal
+    ##        response values.
 
     ## require(lme4)
     ## require(AICcmodavg)
+
     if (is.null(dmg_sets) | is.null(cv_list)){stop("We need complete data")}
 
     ## Selecting the right dataset to use
@@ -119,85 +123,30 @@ RunParametricCV <- function(type,
 }
 
 
-## previously RunTrialWithOpts
-RunParametricAIC <- function(type, trtmnt, bins, mod = FALSE, resp = "D"){
 
-    ##require(lme4)
-
-    ## bin the m, f, e count data:
-    seas.bins <- ddply(c, .(Year, Ranch, Block), BinSeason, num.bins = bins)
-
-    ## looks like:
-    ##cnames:        M1 F1 E1 ... Mn Fn En
-    ##data:           . .  .  .    .  .  .
-    ##                . .  .   .   .  .  .
-    ## etc..          . .  .    .  .  .  .
-
-    ## subsetting response var df by what treatment blocks received
-    dc.subset <- subset(dmg, trt2 == trtmnt)
-
-    ## merging the subset with the season bins:
-    dc <- merge(dc.subset, seas.bins, c("Year", "Ranch", "Block"))
-
-    ## create formula:
-    bin.terms <-  paste(paste0(type, seq(bins)), collapse = " + ")
-
-    switch( resp,
-           D = response.term <- "cbind(DmgNOW, Tot_Nuts - DmgNOW)",
-           I = response.term <- "cbind(InfNOW, Tot_Nuts - DmgNOW)",
-           ID = response.term <- "cbind(DmgNOW, InfNOW - DmgNOW)",
-           )
-
-    if( trtmnt == "LMD" ){
-        other.terms <- " ~ (1|ID) + (1|Block) +  Plot + Variety"
-    } else {
-
-        other.terms <- " ~ (1|ID) + (1|Year) + (1|Ranch/Block) + loc + Plot + Variety"
-
-        if( trtmnt == "LCMD" ){
-            other.terms <- " ~ (1|ID) + (1|Year) + (1|Ranch/Block) + Plot + Variety"
-        }
-
-    }
-
-    f <- as.formula( paste0(response.term, other.terms, bin.terms) )
-
-    ## make model:
-    m <- glmer(f, data = dc, family = "binomial")
-
-    if(mod == TRUE){
-        return(m)
-    } else {
-        return( AIC(m) )
-    }
-}
-
-## previously RunTrialWithOpts2
 RunParametricCVwithResiduals <- function(type,
                                          trtmnt,
                                          bin,
                                          fold = NULL,
                                          resp = "D",
+                                         res_sets = NULL,
                                          dmg_sets = NULL,
                                          cv_list = NULL
                                          ) {
 
 
     ## @Function RunParametricCVwithResiduals
-    ## use: fits a base glmer model then uses the residuals
-    ##      to fit a CV linear regression using seasonal trap-counts.
+    ## use: uses the residuals from a base glmer model
+    ##      to fit a CV linear regression against seasonal trap-counts.
     ##      Then computes the correlation between test response and
     ##      actual response
     ## @Params:
-    ##    (type, trtmnt, bin) - used to subset the damage dataframe
     ##    type - "M", "F", "E"; the desired trap type
     ##    trtmnt - the treatment type (depends also on grain):
-    ##         1) grain == "fine" --> trtmnt in EMD, ECMD, C, LMD, LCMD
-    ##         2) grain != "fine" --> trtmnt in L, C, E
     ##    bin - which bin of the season you'll be using
     ##    fold - which fold to use for CV
     ##    resp - sets the response variable for the models
-    ##    dmg_sets - list of pre-assembled subsets of dmg + seas_bins
+    ##    res_sets - list of pre-assembled residuals
     ##               (this was how I got parallel to work)
     ##    cv_list - list of pre-assembled folds to use for cv
     ## @Out:
@@ -205,62 +154,33 @@ RunParametricCVwithResiduals <- function(type,
 
     ## require(lme4)
     ## require(AICcmodavg)
-    if (is.null(dmg_sets) | is.null(cv_list)){
-        stop("Please add cv_list and dmg_sets")
+
+    if (is.na(res_sets[[trtmnt]])) {return(data.frame(NA))}
+    if (is.null(cv_list)  || is.null(dmg_sets)){
+        stop("Please add cv_list & dmg_sets")
     }
+    if (bin == 0) { stop("bin = 0; this is an issue")}
 
-    ## Selecting the right dataset to use
-    dc <- dmg_sets[[trtmnt]]
-
-    ## create formula from chars
-    f <- switch( resp,
-        D = "cbind(DmgNOW, Tot_Nuts - DmgNOW)",
-        I = "cbind(InfNOW, Tot_Nuts - InfNOW)",
-        ID = "cbind(DmgNOW, InfNOW - DmgNOW)",
+    res_df <- data.frame(
+        RES = res_sets[[trtmnt]],
+        BIN = dc[, paste0(type, bin)]
         )
 
-    f <- paste0(f," ~ (1|Year) + (1|Block) + Plot + Variety + tree_age")
+    rtrain <- res_df[-cv_list[[trtmnt]][[fold]], ]
+    rtest <- res_df[cv_list[[trtmnt]][[fold]], ]
 
-    ## So long as we aren't doing LMD/LCMD we can add a variable
-    ## for location:
+    ## model
+    m <- lm(RES ~ BIN, data = rtrain)
 
-    if (!grepl("L", trtmnt)) { f <- paste0(f," + loc") }
+    ## Make predictions:
+    preds <- stats::predict(
+        m,
+        newdata = rtest
+        )
 
-    ## create formula
-    f <- as.formula(f)
+    data.frame(COR = cor(preds, rtest$RES))
 
-    ## model to account for other predictors
-    m1 <- try(glmer(f, data = dc, family = "binomial"), silent = FALSE)
-
-    if (identical(class(m1), "try-error")) {
-        warning(paste(type, trtmnt, bin, fold, sep =" "))
-        data.frame(COR = NA)
-    } else {
-
-        ## now we test to see how much variance is explained
-        ## by the season bin:
-
-        if (bin != 0) {
-            res_df <- data.frame(
-                RES = residuals(m1),
-                BIN = dc[, paste0(type, bin)]
-                )
-
-            rtrain <- res_df[-cv_list[[trtmnt]][[fold]], ]
-            rtest <- res_df[cv_list[[trtmnt]][[fold]], ]
-
-            ## New model with bin in mind:
-            m2 <- lm(RES ~ BIN, data = rtrain)
-
-            ## Make predictions:
-            preds <- predict(
-                m2,
-                newdata = rtest
-                )
-
-            data.frame(COR = cor(preds, rtest$RES))
-        }
-    }
 }
+
 
 
