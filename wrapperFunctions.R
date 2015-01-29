@@ -183,3 +183,90 @@ RunParametricCVagainstResiduals <- function(type,
     data.frame(COR = cor(preds, rtest$RES, na.rm = TRUE))
 
 }
+
+
+RunPredictiveModelWithCV <- function(.bin,
+                                     .type,
+                                     fold = NULL,
+                                     subset_sets = NULL,
+                                     cv_list = NULL,
+                                     .subset = NULL,
+                                     .formula = NULL,
+                                     .family = "gaussian"
+                                     ) {
+
+
+    ## @Function RunPredictiveModelWithCV
+    ## @Param  type
+    ## @Param  bin
+    ## @Param  fold
+    ## @Param  subset_sets
+    ## @Param  cv_list
+    ## @Param  subset
+    ## @Out: COR & MSE of predicted vs actual responses. AIC of model if
+    ##       CV is turned off.
+
+    ## require(lme4)
+    ## require(AICcmodavg)
+
+    if (is.null(subset_sets) | is.null(cv_list)) stop("We need complete data")
+    if (is.null(formula)) stop("Please provide a formula and subset")
+
+    ## Selecting the right dataset to use
+    dc <- subset_sets[[.subset]]
+
+    ## preset outputs to na and change them when necessary:
+    COR <- NA
+    MSE <- NA
+    AIC <- NA
+
+    ## Go CV route, or AIC route.
+    if (!is.null(fold)) {
+        ## CV
+
+        ## set training and testing sets
+        dc_train <- dc[-cv_list[[trtmnt]][[fold]], ]
+        dc_test <- dc[cv_list[[trtmnt]][[fold]], ]
+
+        ## build model
+        f <- as.formula(paste0(as.quoted(.formula), .type, .bin))
+        m <- try(glmer(f,
+                       data = dc_train,
+                       family = .family
+                       ),
+                 silent = FALSE
+                 )
+
+        if (identical(class(m), "try-error")) {
+            warning(paste(.type, .bin, fold, sep =" "))
+        } else {
+
+            preds <- try(predict(m,
+                                 newdata = dc_test,
+                                 type = "response",
+                                     re.form = NULL), silent = FALSE)
+            if (identical(class(preds), "try-error")) {
+                warning(paste(type, trtmnt, bin, fold, sep = " "))
+            } else {
+                actual <- dc_test$DmgNOW / dc_test$Tot_Nuts
+                COR <- cor(preds, actual, na.rm = TRUE)
+                MSE <- mean((actual - preds)^2, na.rm = TRUE)
+            }
+        }
+    } else {
+        ## AIC
+
+        ## build model
+        f <- as.formula(paste0(as.quoted(formula), type, bin))
+        m <- try(glmer(f, data = dc, family = family), silent = FALSE)
+        if (identical(class(m), "try-error")) {
+            warning(paste(type, trtmnt, bin, sep =" "))
+        } else {
+            actual <- dc$DmgNOW / dc$Tot_Nuts
+            AIC <- AIC(m)
+            COR <- cor(fitted(m), actual, na.rm = TRUE)
+            MSE <- mean(residuals(m)^2)
+        }
+    }
+    data.frame("COR" = COR, "MSE" = MSE, "AIC" = AIC)
+}

@@ -3502,3 +3502,6 @@ DrawPlot <- function(trt = NULL, bin = NULL) {
 
 residuals_set <- llply(dmg_sets, .fun = GetResiduals)
 
+## 1/29/15 ##
+
+## I've made some adjustments to RunParametricCV.
