@@ -4,14 +4,14 @@ source("../almond/R/libs.R")
 
 ## previously RunTrialWithOpts2
 RunParametricCV <- function(type,
-                              trtmnt,
-                              bin,
-                              fold = NULL,
-                              boot_i = NULL,
-                              resp = "D",
-                              dmg_sets = NULL,
-                              cv_list = NULL
-                              ) {
+                            trtmnt,
+                            bin,
+                            fold = NULL,
+                            boot_i = NULL,
+                            resp = "D",
+                            subset_sets = NULL,
+                            cv_list = NULL
+                            ) {
 
 
     ## @Function RunParametricCV
@@ -28,7 +28,7 @@ RunParametricCV <- function(type,
     ##    resp - sets the response variable for the models
     ##    grain - set the granularity of the trtmnt parameter
     ##            (pretty hacky, sorry)
-    ##    dmg_sets & cv_list - pushing these into the function as
+    ##    subset_sets & cv_list - pushing these into the function as
     ##                         parameters was the only way I could
     ##                         figure out to make parallel work.
     ## @Out:
@@ -42,10 +42,10 @@ RunParametricCV <- function(type,
     ## require(lme4)
     ## require(AICcmodavg)
 
-    if (is.null(dmg_sets) | is.null(cv_list)){stop("We need complete data")}
+    if (is.null(subset_sets) | is.null(cv_list)) {stop("We need complete data")}
 
     ## Selecting the right dataset to use
-    dc <- dmg_sets[[trtmnt]]
+    dc <- subset_sets[[trtmnt]]
 
     ## select the proper rows:
     if (!is.null(boot_i)) {
@@ -53,21 +53,14 @@ RunParametricCV <- function(type,
         if (identical(class(dc), "try-error")) {stop("boot_i must be an int")}
     }
 
-    ## response term
-    response.term <- switch( resp,
-                            D = "cbind(DmgNOW, Tot_Nuts - DmgNOW)",
-                            I = "cbind(InfNOW, Tot_Nuts - InfNOW)",
-                            ID = "cbind(DmgNOW, InfNOW - DmgNOW)",
+    ## build text form
+    response.term <- switch(resp,
+                            D = "cbind(DmgNOW, Tot_Nuts - DmgNOW) ~ ",
+                            I = "cbind(InfNOW, Tot_Nuts - InfNOW) ~ ",
+                            ID = "cbind(DmgNOW, InfNOW - DmgNOW) ~ ",
                             )
 
-    ## general predictors
-    if (is.null(fold)) {
-        other.terms <- " ~ (1|SampleID) + "
-    } else {
-        other.terms <- " ~ "
-    }
-
-    other.terms <- paste0(other.terms,"(1|Year) + (1|Block/Ranch)")
+    other.terms <- paste0(other.terms," (1|Year) + (1|Block/Ranch)")
     other.terms <- paste0(other.terms," + Plot + Variety + tree_age")
     if (!grepl("L", trtmnt)) { other.terms <- paste0(other.terms," + loc") }
 
@@ -81,7 +74,12 @@ RunParametricCV <- function(type,
     ## create formula
     f <- as.formula(paste0(response.term, other.terms, bin.terms))
 
-    ## Go CV route, or AIC route. 
+    ## preset outputs to na and change them when necessary:
+    COR <- NA
+    MSE <- NA
+    AIC <- NA
+
+    ## Go CV route, or AIC route.
     if (!is.null(fold)) {
         ## CV
 
@@ -92,8 +90,7 @@ RunParametricCV <- function(type,
         ## build model
         m <- try(glmer(f, data = dc_train, family = "binomial"), silent = FALSE)
         if (identical(class(m), "try-error")) {
-            ##warning(paste(type, trtmnt, bin, fold, sep =" "))
-            data.frame("COR" = NA)
+            warning(paste(type, trtmnt, bin, fold, sep =" "))
         } else {
 
             preds <- try(predict(m,
@@ -102,12 +99,13 @@ RunParametricCV <- function(type,
                                      re.form = NULL), silent = FALSE)
             if (identical(class(preds), "try-error")) {
                 warning(paste(type, trtmnt, bin, fold, sep = " "))
-                data.frame("COR" = NA)
             } else {
-                actual <- na.omit(dc_test$DmgNOW / dc_test$Tot_Nuts)
-                data.frame("COR" = cor(preds, actual))
+                actual <- dc_test$DmgNOW / dc_test$Tot_Nuts
+                COR <- cor(preds, actual, na.rm = TRUE)
+                MSE <- mean((actual - preds)^2, na.rm = TRUE)
             }
         }
+
     } else {
         ## AIC
 
@@ -115,23 +113,27 @@ RunParametricCV <- function(type,
         m <- try(glmer(f, data = dc, family = "binomial"), silent = FALSE)
         if (identical(class(m), "try-error")) {
             warning(paste(type, trtmnt, bin, sep =" "))
-            data.frame("AIC" = NA)
         } else {
-            data.frame("AIC" = AIC(m))
+            actual <- dc$DmgNOW / dc$Tot_Nuts
+            AIC <- AIC(m)
+            COR <- cor(fitted(m), actual, na.rm = TRUE)
+            MSE <- mean(residuals(m)^2)
         }
     }
+
+    data.frame("COR" = COR, "MSE" = MSE, "AIC" = AIC)
 }
 
 
 
-RunParametricCVwithResiduals <- function(type,
+RunParametricCVagainstResiduals <- function(type,
                                          trtmnt,
                                          bin,
                                          fold = NULL,
-                                         resp = "D"##,
-                                         ## res_sets = NULL,
-                                         ## dmg_sets = NULL,
-                                         ## cv_list = NULL
+                                         resp = "D",
+                                         res_sets = NULL,
+                                         dmg_sets = NULL,
+                                         cv_list = NULL
                                          ) {
 
 
@@ -155,28 +157,15 @@ RunParametricCVwithResiduals <- function(type,
     ## require(lme4)
     ## require(AICcmodavg)
 
-    ## if (is.null(cv_list)  || is.null(dmg_sets || is.null(res_sets))){
-    ##     stop("Please add cv_list & dmg_sets & res_sets")
-    ## }
+    if (is.null(cv_list)  || is.null(dmg_sets) || is.null(res_sets)){
+        stop("Please add cv_list & dmg_sets & res_sets")
+    }
 
-
-    dmg_sets <- try(get("dmg_sets", envir = parent.frame()))
-    res_sets <- try(get("res_sets", envir = parent.frame()))
-    ##cv_list <- try(get("cv_list", envir = parent.frame()))
-
-    ## classes <- sapply(list(dmg_sets, res_sets, cv_list), class)
-    
-    ## if(identical(classes, rep("try-error", times = 3))) {
-    ##     print(classes)
-    ## } else { print("no errors")}
-
-    stop("done")
-    
     if (bin == 0) { stop("bin = 0; this is an issue")}
 
     res_df <- data.frame(
         RES = res_sets[[trtmnt]],
-        BIN = dmg_sets[[trtmnt]][, paste(type, bin)]
+        BIN = dmg_sets[[trtmnt]][, paste0(type, bin)]
         )
 
     rtrain <- res_df[-cv_list[[trtmnt]][[fold]], ]
@@ -191,9 +180,6 @@ RunParametricCVwithResiduals <- function(type,
         newdata = rtest
         )
 
-    data.frame(COR = cor(preds, rtest$RES))
+    data.frame(COR = cor(preds, rtest$RES, na.rm = TRUE))
 
 }
-
-
-

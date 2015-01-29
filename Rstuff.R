@@ -3352,8 +3352,9 @@ colnames(val.grid) <- c("type", "trtmnt", "bin", "fold")
 
 ## ok so that worked-ish. Now let's see about that repex:
 library(lme4)
-randomData <- data.frame( "Year" = sample(c(2009, 2010, 2011, 2012, 2013), 488,
-                              replace = TRUE),
+randomData <- data.frame( "Year" = as.factor(
+                              sample(c(2009, 2010, 2011, 2012, 2013), 488,
+                              replace = TRUE)),
                          "Block" = sample(c("13-3", "13-4", "14-4", "24-3",
                              "24-4", "1-3", "11-4", "12-3", "12-4", "2-3",
                              "2-4", "13-1", "13-2", "14-1", "24-1", "24-2",
@@ -3366,8 +3367,8 @@ randomData <- data.frame( "Year" = sample(c(2009, 2010, 2011, 2012, 2013), 488,
                          "loc" = sample(c("LH", "SF"), 488, replace = TRUE),
                          "DmgNOW" = sample(1:200, 488, replace = TRUE),
                          "Tot_Nuts" = sample(300:700, 488, replace = TRUE),
-                         "Variety" = sample(c("N", "F", "C", "M", "W",
-                             "B", "P", "Mi", "R", "S"), 488, replace = TRUE),
+                         "Variety" = as.factor(sample(c("N", "F", "C", "M", "W",
+                             "B", "P", "Mi", "R", "S"), 488, replace = TRUE)),
                          "tree_age" = sample(10:25, 488, replace = TRUE),
                          "M4" = sample(0:10, 488, replace = TRUE),
                          stringsAsFactors = FALSE)
