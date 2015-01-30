@@ -534,35 +534,32 @@ FoldData <- function(df, k = 5, random = TRUE, seed = NULL){
     folds <- SegmentVec(rows, k, ordered = FALSE)
 }
 
-GetResiduals <- function(subset = NULL, resp = "D") {
+GetResiduals <- function(.subset = NULL,
+                         .response = "D",
+                         .family = "binomial"
+                         ) {
 
     if (is.null(subset)) return(NA)
 
-    f <- switch( resp,
+    f <- switch(.response,
                 D = "cbind(DmgNOW, Tot_Nuts - DmgNOW)",
                 I = "cbind(InfNOW, Tot_Nuts - InfNOW)",
                 ID = "cbind(DmgNOW, InfNOW - DmgNOW)",
                 LD = "DmgNOW / Tot_Nuts",
                 LI = "InfNOW / Tot_Nuts",
-                LID = "DmgNOW / InfNOW",
-
-    ##f <- paste0(f," ~ (1 | Year) + (1 | Block/Ranch) + Plot + Variety + tree_age")
+                LID = "DmgNOW / InfNOW"
+                )
 
     f <- paste0(f, " ~ (1|Variety) + tree_age")
-
-    ## So long as we aren't doing LMD/LCMD we can add a variable
-    ## for location:
-
-    ##if (!grepl("L", unique(subset$trt2))) { f <- paste0(f," + loc") }
 
     ## create formula
     f <- as.formula(f)
 
-    ## model to account for other predictors
-    m1 <- try(glmer(f, data = subset, family = "binomial"), silent = FALSE)
+    ## model
+    m1 <- try(glmer(f, data = .subset, family = .family), silent = FALSE)
     if (identical(class(m1), "try-error")) {
-        return(NA)
+        return(NA) ##TODO make a better catch
     }
 
-    res <- residuals(m1)
+    residuals(m1)
 }

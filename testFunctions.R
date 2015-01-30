@@ -10,7 +10,7 @@ testRunParametricCV <- function(K = 5,
                                 parallel = FALSE,
                                 splitVar = "trt2",
                                 .predict = FALSE,
-                                formula = NULL,
+                                formula = NULL
                                 ) {
 
     ## @Function testRunParamentricCV
@@ -39,6 +39,7 @@ testRunParametricCV <- function(K = 5,
     seas_bins <- ddply(c, .(Year, Ranch, Block), BinSeason, num.bins = bins)
 
     if(splitVar != "trt2") {stop("feature not yet functional")}
+    ##TODO: make this work.
 
     splitVar_sets <-  dlply(dmg,
                        .(eval(parse(text = splitVar))),
@@ -88,14 +89,14 @@ testRunParameticCVagainstResiduals <- function(K = 5,
                        by = c("Year", "Ranch", "Block")
                        )
 
-    insect_vars <- llply(list("M", "F", "E"),
+    insect_vars <- llply(c("M", "F", "E"),
                          function(x) c(paste0(x, rep(1:bins)), NA)
                          )
 
     res_sets <- llply(dmg_sets, GetResiduals)
-    val_grid <- list(insect_vars,
-                     as.character(na.omit(dmg$trt2)),
-                     1:K
+    val_grid <- c(insect_vars,
+                     list(as.character(na.omit(unique(dmg$trt2)))),
+                     list(1:K)
                      )
 
     val_grid <- expand.grid(val_grid, stringsAsFactors = FALSE)
