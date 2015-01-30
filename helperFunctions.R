@@ -539,17 +539,21 @@ GetResiduals <- function(subset = NULL, resp = "D") {
     if (is.null(subset)) return(NA)
 
     f <- switch( resp,
-        D = "cbind(DmgNOW, Tot_Nuts - DmgNOW)",
-        I = "cbind(InfNOW, Tot_Nuts - InfNOW)",
-        ID = "cbind(DmgNOW, InfNOW - DmgNOW)",
-        )
+                D = "cbind(DmgNOW, Tot_Nuts - DmgNOW)",
+                I = "cbind(InfNOW, Tot_Nuts - InfNOW)",
+                ID = "cbind(DmgNOW, InfNOW - DmgNOW)",
+                LD = "DmgNOW / Tot_Nuts",
+                LI = "InfNOW / Tot_Nuts",
+                LID = "DmgNOW / InfNOW",
 
-    f <- paste0(f," ~ (1|Year) + (1|Block/Ranch) + Plot + Variety + tree_age")
+    ##f <- paste0(f," ~ (1 | Year) + (1 | Block/Ranch) + Plot + Variety + tree_age")
+
+    f <- paste0(f, " ~ (1|Variety) + tree_age")
 
     ## So long as we aren't doing LMD/LCMD we can add a variable
     ## for location:
 
-    if (!grepl("L", unique(subset$trt2))) { f <- paste0(f," + loc") }
+    ##if (!grepl("L", unique(subset$trt2))) { f <- paste0(f," + loc") }
 
     ## create formula
     f <- as.formula(f)

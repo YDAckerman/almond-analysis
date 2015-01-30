@@ -126,33 +126,18 @@ RunParametricCV <- function(type,
 
 
 
-RunParametricCVagainstResiduals <- function(type,
-                                         trtmnt,
-                                         bin,
-                                         fold = NULL,
-                                         resp = "D",
-                                         res_sets = NULL,
-                                         dmg_sets = NULL,
-                                         cv_list = NULL
+RunParametricCVagainstResiduals <- function(V1,
+                                            V2,
+                                            V3,
+                                            trtmnt,
+                                            fold = NULL,
+                                            res_sets = NULL,
+                                            dmg_sets = NULL,
+                                            cv_list = NULL
                                          ) {
 
 
     ## @Function RunParametricCVwithResiduals
-    ## use: uses the residuals from a base glmer model
-    ##      to fit a CV linear regression against seasonal trap-counts.
-    ##      Then computes the correlation between test response and
-    ##      actual response
-    ## @Params:
-    ##    type - "M", "F", "E"; the desired trap type
-    ##    trtmnt - the treatment type (depends also on grain):
-    ##    bin - which bin of the season you'll be using
-    ##    fold - which fold to use for CV
-    ##    resp - sets the response variable for the models
-    ##    res_sets - list of pre-assembled residuals
-    ##               (this was how I got parallel to work)
-    ##    cv_list - list of pre-assembled folds to use for cv
-    ## @Out:
-    ##    The COR of the model
 
     ## require(lme4)
     ## require(AICcmodavg)
@@ -163,25 +148,26 @@ RunParametricCVagainstResiduals <- function(type,
 
     if (bin == 0) { stop("bin = 0; this is an issue")}
 
+    ##TODO make sure correct bins are being pulled:
     res_df <- data.frame(
         RES = res_sets[[trtmnt]],
-        BIN = dmg_sets[[trtmnt]][, paste0(type, bin)]
+        dmg_sets[[trtmnt]][, na.omit(c(V1, V2, V3))]
         )
 
     rtrain <- res_df[-cv_list[[trtmnt]][[fold]], ]
     rtest <- res_df[cv_list[[trtmnt]][[fold]], ]
 
-    ## model
-    m <- lm(RES ~ BIN, data = rtrain)
+    ## formula
+    f <- paste0("RES ~ ", paste(na.omit(c(V1,V2,V3)), sep = " + "))
+    m <- lm(as.formula(f), data = rtrain)
 
     ## Make predictions:
-    preds <- stats::predict(
-        m,
-        newdata = rtest
-        )
+    preds <- stats::predict(m, newdata = rtest)
 
-    data.frame(COR = cor(preds, rtest$RES, na.rm = TRUE))
+    MSE <- mean((preds - rtest$RES)^2, na.rm = TRUE)
+    COR <- cor(preds, rtest$RES, na.rm = TRUE)
 
+    data.frame('COR' = COR, 'MSE' = MSE)
 }
 
 
@@ -192,7 +178,7 @@ RunPredictiveModelWithCV <- function(.bin,
                                      cv_list = NULL,
                                      .subset = NULL,
                                      .formula = NULL,
-                                     .family = "gaussian"
+                                     .family = "binomial"
                                      ) {
 
 
@@ -210,7 +196,7 @@ RunPredictiveModelWithCV <- function(.bin,
     ## require(AICcmodavg)
 
     if (is.null(subset_sets) | is.null(cv_list)) stop("We need complete data")
-    if (is.null(formula)) stop("Please provide a formula and subset")
+    if (is.null(.formula)) stop("Please provide a formula and subset")
 
     ## Selecting the right dataset to use
     dc <- subset_sets[[.subset]]
@@ -229,7 +215,7 @@ RunPredictiveModelWithCV <- function(.bin,
         dc_test <- dc[cv_list[[trtmnt]][[fold]], ]
 
         ## build model
-        f <- as.formula(paste0(as.quoted(.formula), .type, .bin))
+        f <- as.formula(paste0(.formula, .type, .bin))
         m <- try(glmer(f,
                        data = dc_train,
                        family = .family
@@ -246,7 +232,7 @@ RunPredictiveModelWithCV <- function(.bin,
                                  type = "response",
                                      re.form = NULL), silent = FALSE)
             if (identical(class(preds), "try-error")) {
-                warning(paste(type, trtmnt, bin, fold, sep = " "))
+                warning(paste(.type, .bin, fold, sep = " "))
             } else {
                 actual <- dc_test$DmgNOW / dc_test$Tot_Nuts
                 COR <- cor(preds, actual, na.rm = TRUE)
@@ -257,10 +243,10 @@ RunPredictiveModelWithCV <- function(.bin,
         ## AIC
 
         ## build model
-        f <- as.formula(paste0(as.quoted(formula), type, bin))
-        m <- try(glmer(f, data = dc, family = family), silent = FALSE)
+        f <- as.formula(paste0(.formula, .type, .bin))
+        m <- try(glmer(f, data = dc, family = .family), silent = FALSE)
         if (identical(class(m), "try-error")) {
-            warning(paste(type, trtmnt, bin, sep =" "))
+            warning(paste(.type, .bin, sep =" "))
         } else {
             actual <- dc$DmgNOW / dc$Tot_Nuts
             AIC <- AIC(m)

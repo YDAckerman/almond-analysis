@@ -29,10 +29,17 @@ testRunParametricCV <- function(K = 5,
     ## @Param formula: character, base model to use in regressions. e.g.
     ##                            "cbind(n, N - n) ~ x1 + x2:x1"
 
-    cv_list <- dlply(dmg, .(trt2), FoldData, k = K, seed = 10)
+    cv_list <- dlply(dmg,
+                     .(eval(parse(text = splitVar))),
+                     FoldData,
+                     k = K,
+                     seed = 10
+                     )
+    
     seas_bins <- ddply(c, .(Year, Ranch, Block), BinSeason, num.bins = bins)
 
-    if(splitVar != trt2) {stop("feature not yet functional")}
+    if(splitVar != "trt2") {stop("feature not yet functional")}
+
     splitVar_sets <-  dlply(dmg,
                        .(eval(parse(text = splitVar))),
                        merge,
@@ -55,7 +62,7 @@ testRunParametricCV <- function(K = 5,
 
     results <- mdply(val_grid,
                      RunParametricCV,
-                     subset_sets = trt_sets,
+                     subset_sets = splitVar_sets,
                      cv_list = cv_list,
                      predictive = .predict,
                      .progress = "text",
@@ -66,7 +73,7 @@ testRunParametricCV <- function(K = 5,
 }
 
 
-testRunParameticCVagainstResiduals<- function(K = 5,
+testRunParameticCVagainstResiduals <- function(K = 5,
                                            bins = 5,
                                            parallel = FALSE,
                                            subset = NULL
@@ -81,21 +88,23 @@ testRunParameticCVagainstResiduals<- function(K = 5,
                        by = c("Year", "Ranch", "Block")
                        )
 
+    insect_vars <- llply(list("M", "F", "E"),
+                         function(x) c(paste0(x, rep(1:bins)), NA)
+                         )
+
     res_sets <- llply(dmg_sets, GetResiduals)
-    val_grid <- list(c("M", "F", "E"),
-                     c("EMD", "ECMD", "CONV", "LMD", "LCMD"),
-                     1:bins,
+    val_grid <- list(insect_vars,
+                     as.character(na.omit(dmg$trt2)),
                      1:K
                      )
 
     val_grid <- expand.grid(val_grid, stringsAsFactors = FALSE)
-    colnames(val_grid) <- c("type", "trtmnt", "bin", "fold")
-
+    colnames(val_grid) <- c("V1", "V2", "V3", "trtmnt", "fold")
 
     if (!is.null(subset)) {
         val_grid <- try(subset(val_grid, eval(parse(text = subset))))
         if (identical(class(val_grid), "try-error")) {
-            stop("subset set must be evaluate to a logical expression")
+            stop("subset must be logical")
         }
     }
 
@@ -114,3 +123,59 @@ testRunParameticCVagainstResiduals<- function(K = 5,
                      .inform = TRUE
                      )
 }
+
+## putting this on hold
+
+## testRunPredictiveModelWithCV <- function(K = 5,
+##                                            bins = 5,
+##                                            parallel = FALSE,
+##                                            subset = NULL
+##                                            ) {
+
+##     cv_list <- dlply(dmg, .(Year), FoldData, k = K, seed = 10)
+##     seas_bins <- ddply(c, .(Year, Ranch, Block), BinSeason, num.bins = bins)
+##     dmg_sets <-  dlply(dmg,
+##                        .(Year),
+##                        merge,
+##                        y = seas_bins,
+##                        by = c("Year", "Ranch", "Block")
+##                        )
+
+##     res_sets <- llply(dmg_sets, GetResiduals)
+
+## insect_vars <- llply(list("M", "F", "E"),
+##                      function(x) c(paste0(x, rep(1:bins)), "")
+##                      )
+
+##     val_grid <- list(c("M", "F", "E"),
+##                      c("EMD", "ECMD", "CONV", "LMD", "LCMD"),
+##                      1:bins,
+##                      1:K
+##                      )
+
+##     val_grid <- expand.grid(val_grid, stringsAsFactors = FALSE)
+##     colnames(val_grid) <- c("type", "trtmnt", "bin", "fold")
+
+
+##     if (!is.null(subset)) {
+##         val_grid <- try(subset(val_grid, eval(parse(text = subset))))
+##         if (identical(class(val_grid), "try-error")) {
+##             stop("subset set must be evaluate to a logical expression")
+##         }
+##     }
+
+##     if (parallel) {registerDoMC(cores = 4)}
+
+##     par_opts = list(.export = c("dmg_sets", "cv_list", "res_sets"))
+
+##     results <- mdply(val_grid,
+##                      RunParametricCVagainstResiduals,
+##                      dmg_sets = dmg_sets,
+##                      cv_list = cv_list,
+##                      res_sets = res_sets,
+##                      .progress = "text",
+##                      .parallel = parallel,
+##                      .paropts = par_opts,
+##                      .inform = TRUE
+##                      )
+## }

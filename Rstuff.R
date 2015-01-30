@@ -3505,3 +3505,17 @@ residuals_set <- llply(dmg_sets, .fun = GetResiduals)
 ## 1/29/15 ##
 
 ## I've made some adjustments to RunParametricCV.
+
+## 1/30/15 ##
+
+## The models we've been using have started to show cracks
+## The insect variable doesn't appear to have any predictive
+## value against the backdrop of the greater model...
+## What to do? Culprits might be the Year and Block variables.
+## But I was earlier under the impression that including them
+## was what would allow use to tease out the insect effects in
+## first place. So back to exploring models, I suppose...
+
+ggplot(dmg, aes(x = as.factor(Block), y = DmgNOW / Tot_Nuts)) + geom_point(aes(size = Tot_Nuts)) + theme(axis.text.x = element_text(angle = 90, hjust = 0)) ## works
+
+ggplot(dmg, aes(x = as.factor(Block), y = DmgNOW / Tot_Nuts)) + geom_boxplot() + theme(axis.text.x = element_text(angle = 90, hjust = 0)) ## works
