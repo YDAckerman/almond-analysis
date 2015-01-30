@@ -146,8 +146,6 @@ RunParametricCVagainstResiduals <- function(V1,
         stop("Please add cv_list & dmg_sets & res_sets")
     }
 
-    if (bin == 0) { stop("bin = 0; this is an issue")}
-
     ##TODO make sure correct bins are being pulled:
     res_df <- data.frame(
         RES = res_sets[[trtmnt]],
@@ -158,9 +156,11 @@ RunParametricCVagainstResiduals <- function(V1,
     rtest <- res_df[cv_list[[trtmnt]][[fold]], ]
 
     ## formula
-    f <- paste0("RES ~ ", paste(na.omit(c(V1,V2,V3)), sep = " + "))
+    f <- paste0("RES ~ ", paste(na.omit(c(V1,V2,V3)), collapse = " + "))
     m <- lm(as.formula(f), data = rtrain)
 
+    summary(m)
+    stop()
     ## Make predictions:
     preds <- stats::predict(m, newdata = rtest)
 
