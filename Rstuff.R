@@ -1,3 +1,8 @@
+## NOTE: This is my journal of R commands. It decends chronologically.
+## My R-comprehension (and thus style) evolves quite a bit thoughout.
+## scroll all the way down to see what I've been up to lately.
+
+
 ##---- General Use ----##
 
 ## functions:
@@ -3508,11 +3513,11 @@ residuals_set <- llply(dmg_sets, .fun = GetResiduals)
 
 ## 1/30/15 ##
 
-## The models we've been using have started to show cracks
+## The models we've been using have started to show cracks.
 ## The insect variable doesn't appear to have any predictive
-## value against the backdrop of the greater model...
+## value against the backdrop of the other predictors...
 ## What to do? Culprits might be the Year and Block variables.
-## But I was earlier under the impression that including them
+## But I was under the impression that including them
 ## was what would allow use to tease out the insect effects in
 ## first place. So back to exploring models, I suppose...
 
