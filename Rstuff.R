@@ -1,6 +1,6 @@
-## NOTE: This is my journal of R commands. It decends chronologically.
+## NOTE: This is my journal of R commands. It descends chronologically.
 ## My R-comprehension (and thus style) evolves quite a bit thoughout.
-## scroll all the way down to see what I've been up to lately.
+## Scroll all the way down to see what I've been up to lately.
 
 
 ##---- General Use ----##
