@@ -131,9 +131,9 @@ RunParametricCVagainstResiduals <- function(V1,
                                             V3,
                                             trtmnt,
                                             fold = NULL,
-                                            res_sets = NULL,
-                                            dmg_sets = NULL,
-                                            cv_list = NULL
+                                            .res_sets = NULL,
+                                            .dmg_sets = NULL,
+                                            .cv_list = NULL
                                          ) {
 
 
@@ -143,29 +143,34 @@ RunParametricCVagainstResiduals <- function(V1,
     ## require(lme4)
     ## require(AICcmodavg)
 
-    if (is.null(cv_list)  || is.null(dmg_sets) || is.null(res_sets)){
-        stop("Please add cv_list & dmg_sets & res_sets")
+    COR <- NA
+    MSE <- NA
+
+    if (sum(is.na(c(V1,V2,V3))) != 3)  {
+        if (is.null(.cv_list)  || is.null(dmg_sets) || is.null(.res_sets)){
+            stop("Please add .cv_list & dmg_sets & .res_sets")
+        }
+
+        vars <- as.vector(na.omit(c(V1, V2, V3)))
+
+        ## I'll d.f instead of merge so I can access by name?
+        res_df <- data.frame(RES = .res_sets[[trtmnt]],
+                             (dmg_sets[[trtmnt]])[, vars]
+                             )
+
+        ## split for CV (is this cv even legit?)
+        rtrain <- res_df[-.cv_list[[trtmnt]][[fold]], ]
+        rtest <- res_df[.cv_list[[trtmnt]][[fold]], ]
+
+        ## formula
+        m <- lm(RES ~ ., data = rtrain)
+
+        ## Make predictions:
+        preds <- predict(m, newdata = rtest)
+
+        MSE <- mean((preds - rtest$RES)^2, na.rm = TRUE)
+        COR <- cor(preds, rtest$RES, use = "pairwise.complete.obs")
     }
-
-    vars <- na.omit(c(V1, V2, V3))
-
-    ##TODO make sure correct bins are being pulled:
-    res_df <- data.frame(RES = res_sets[[trtmnt]],
-                         dmg_sets[[trtmnt]][, vars]
-                         )
-
-    rtrain <- res_df[-cv_list[[trtmnt]][[fold]], ]
-    rtest <- res_df[cv_list[[trtmnt]][[fold]], ]
-
-    ## formula
-    f <- paste0("RES ~ ", paste(vars, collapse = " + "))
-    m <- lm(as.formula(f), data = rtrain)
-
-    ## Make predictions:
-    preds <- predict(m, newdata = rtest)
-
-    MSE <- mean((preds - rtest$RES)^2, na.rm = TRUE)
-    COR <- cor(preds, rtest$RES, na.rm = TRUE)
 
     data.frame('COR' = COR, 'MSE' = MSE)
 }

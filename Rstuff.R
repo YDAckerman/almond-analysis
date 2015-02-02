@@ -3535,9 +3535,9 @@ ggplot(dmg, aes(x = as.factor(Block), y = DmgNOW / Tot_Nuts)) + geom_boxplot() +
 ## get messy, and leave vestiges of mistakes in every new session you
 ## start.
 
-FindMissingInt <- function(v){
+RunParametricCVagainstResiduals(NA, NA, NA, "ECMD", fold = 1, .res_sets = res_sets, .dmg_sets = dmg_sets, .cv_list = cv_list)
+test <- testRunParameticCVagainstResiduals(bins = 2,
+                                           subset = "fold == 1"
+                                           ) ## works
 
-    if(!is.numeric(v)) v <- as.numeric(v); warning("v has been altered")
-
-    Identical(1:length(v), names(v))
-}
+res <- testRunParameticCVagainstResiduals(K = 10, bins = 2, parallel = TRUE)
