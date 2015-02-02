@@ -93,6 +93,12 @@ testRunParameticCVagainstResiduals <- function(K = 5,
                          function(x) c(paste0(x, rep(1:bins)), NA)
                          )
 
+    insect_grid <- expand.grid(insect_vars, stringsAsFactors = FALSE)
+    colnames(insect_grid) <- c("V1", "V2", "V3")
+    insect_grid$TextID <- apply(insect_grid, 1, paste, collapse = "+")
+    insect_grid$NumID <- 1:((bins + 1)^3)
+
+
     res_sets <- llply(dmg_sets, GetResiduals)
     val_grid <- c(insect_vars,
                      list(as.character(na.omit(unique(dmg$trt2)))),
@@ -123,6 +129,8 @@ testRunParameticCVagainstResiduals <- function(K = 5,
                      .paropts = par_opts,
                      .inform = TRUE
                      )
+
+    merge(results, insect_grid, by = c("V1", "V2", "V3"))
 }
 
 ## putting this on hold

@@ -560,3 +560,4 @@ GetResiduals <- function(.subset = NULL,
 
     residuals(m1)
 }
+

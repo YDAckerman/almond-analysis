@@ -3541,3 +3541,16 @@ test <- testRunParameticCVagainstResiduals(bins = 2,
                                            ) ## works
 
 res <- testRunParameticCVagainstResiduals(K = 10, bins = 2, parallel = TRUE)
+
+ggplot(res, aes(x = MSE, y = COR, color = as.factor(CombID), shape = as.factor(fold))) + geom_point(size = 2) + facet_wrap(~trtmnt)
+
+ggplot(res, aes(x = TextID, y = COR, color = as.factor(fold))) + geom_point(size = 2) + facet_grid( ~ trtmnt) + theme(text = element_text(size = 7), axis.text.x = element_text(angle = 90, hjust = 0)) ## works
+
+ggplot(res, aes(x = TextID, y = MSE, color = as.factor(fold))) + geom_point(size = 2) + facet_grid( ~ trtmnt) + theme(text = element_text(size = 7), axis.text.x = element_text(angle = 90, hjust = 0)) ## works
+
+res <- ddply(res, .(TextID), transform, meanCOR = mean(COR, na.rm = TRUE))
+res <- ddply(res, .(TextID), transform, meanMSE = mean(MSE, na.rm = TRUE))
+
+ggplot(res, aes(x = TextID, y = meanCOR)) + geom_point(size = 2) + facet_grid( ~ trtmnt) + theme(text = element_text(size = 7), axis.text.x = element_text(angle = 90, hjust = 0)) ## works
+
+ggplot(subset(res, meanCOR > .3), aes(x = TextID, y = meanCOR)) + geom_point(size = 2) + facet_grid( ~ trtmnt) + theme(text = element_text(size = 7), axis.text.x = element_text(angle = 90, hjust = 0)) ## works

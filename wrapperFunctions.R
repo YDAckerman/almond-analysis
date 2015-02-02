@@ -160,7 +160,6 @@ RunParametricCVagainstResiduals <- function(V1,
         if (fold == 0) {
             m <- lm(RES ~ ., data = res_df, na.action = na.exclude)
             fit <- fitted(m, na.action = na.exclude)
-            print(length(fit))
             MSE <- mean((residuals(m))^2, na.rm = TRUE)
             COR <- cor(fit, res_df$RES, use = "pairwise.complete.obs")
 
