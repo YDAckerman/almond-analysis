@@ -157,19 +157,27 @@ RunParametricCVagainstResiduals <- function(V1,
         res_df <- data.frame(RES = .res_sets[[trtmnt]],
                              (dmg_sets[[trtmnt]])[, vars]
                              )
+        if (fold == 0) {
+            m <- lm(RES ~ ., data = res_df, na.action = na.exclude)
+            fit <- fitted(m, na.action = na.exclude)
+            print(length(fit))
+            MSE <- mean((residuals(m))^2, na.rm = TRUE)
+            COR <- cor(fit, res_df$RES, use = "pairwise.complete.obs")
 
-        ## split for CV (is this cv even legit?)
-        rtrain <- res_df[-.cv_list[[trtmnt]][[fold]], ]
-        rtest <- res_df[.cv_list[[trtmnt]][[fold]], ]
+        } else {
+            ## split for CV (is this cv even legit?)
+            rtrain <- res_df[-.cv_list[[trtmnt]][[fold]], ]
+            rtest <- res_df[.cv_list[[trtmnt]][[fold]], ]
 
-        ## formula
-        m <- lm(RES ~ ., data = rtrain)
+            ## formula
+            m <- lm(RES ~ ., data = rtrain)
 
-        ## Make predictions:
-        preds <- predict(m, newdata = rtest)
+            ## Make predictions:
+            preds <- predict(m, newdata = rtest)
 
-        MSE <- mean((preds - rtest$RES)^2, na.rm = TRUE)
-        COR <- cor(preds, rtest$RES, use = "pairwise.complete.obs")
+            MSE <- mean((preds - rtest$RES)^2, na.rm = TRUE)
+            COR <- cor(preds, rtest$RES, use = "pairwise.complete.obs")
+        }
     }
 
     data.frame('COR' = COR, 'MSE' = MSE)

@@ -3535,7 +3535,7 @@ ggplot(dmg, aes(x = as.factor(Block), y = DmgNOW / Tot_Nuts)) + geom_boxplot() +
 ## get messy, and leave vestiges of mistakes in every new session you
 ## start.
 
-RunParametricCVagainstResiduals(NA, NA, NA, "ECMD", fold = 1, .res_sets = res_sets, .dmg_sets = dmg_sets, .cv_list = cv_list)
+RunParametricCVagainstResiduals("M1", "E1", "F1", "ECMD", fold = 0, .res_sets = res_sets, .dmg_sets = dmg_sets, .cv_list = cv_list)
 test <- testRunParameticCVagainstResiduals(bins = 2,
                                            subset = "fold == 1"
                                            ) ## works

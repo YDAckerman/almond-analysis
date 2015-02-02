@@ -96,7 +96,7 @@ testRunParameticCVagainstResiduals <- function(K = 5,
     res_sets <- llply(dmg_sets, GetResiduals)
     val_grid <- c(insect_vars,
                      list(as.character(na.omit(unique(dmg$trt2)))),
-                     list(1:K)
+                     list(0:K)
                      )
 
     val_grid <- expand.grid(val_grid, stringsAsFactors = FALSE)
