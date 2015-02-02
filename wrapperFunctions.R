@@ -138,6 +138,7 @@ RunParametricCVagainstResiduals <- function(V1,
 
 
     ## @Function RunParametricCVwithResiduals
+    ## TODO: write function summary
 
     ## require(lme4)
     ## require(AICcmodavg)
@@ -146,23 +147,22 @@ RunParametricCVagainstResiduals <- function(V1,
         stop("Please add cv_list & dmg_sets & res_sets")
     }
 
+    vars <- na.omit(c(V1, V2, V3))
+
     ##TODO make sure correct bins are being pulled:
-    res_df <- data.frame(
-        RES = res_sets[[trtmnt]],
-        dmg_sets[[trtmnt]][, na.omit(c(V1, V2, V3))]
-        )
+    res_df <- data.frame(RES = res_sets[[trtmnt]],
+                         dmg_sets[[trtmnt]][, vars]
+                         )
 
     rtrain <- res_df[-cv_list[[trtmnt]][[fold]], ]
     rtest <- res_df[cv_list[[trtmnt]][[fold]], ]
 
     ## formula
-    f <- paste0("RES ~ ", paste(na.omit(c(V1,V2,V3)), collapse = " + "))
+    f <- paste0("RES ~ ", paste(vars, collapse = " + "))
     m <- lm(as.formula(f), data = rtrain)
 
-    summary(m)
-    stop()
     ## Make predictions:
-    preds <- stats::predict(m, newdata = rtest)
+    preds <- predict(m, newdata = rtest)
 
     MSE <- mean((preds - rtest$RES)^2, na.rm = TRUE)
     COR <- cor(preds, rtest$RES, na.rm = TRUE)

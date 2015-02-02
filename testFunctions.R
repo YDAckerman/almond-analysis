@@ -35,7 +35,7 @@ testRunParametricCV <- function(K = 5,
                      k = K,
                      seed = 10
                      )
-    
+
     seas_bins <- ddply(c, .(Year, Ranch, Block), BinSeason, num.bins = bins)
 
     if(splitVar != "trt2") {stop("feature not yet functional")}
@@ -80,10 +80,10 @@ testRunParameticCVagainstResiduals <- function(K = 5,
                                            subset = NULL
                                            ) {
 
-    cv_list <- dlply(dmg, .(trt2), FoldData, k = K, seed = 10)
+    cv_list <- dlply(dmg, .(na.omit(trt2)), FoldData, k = K, seed = 10)
     seas_bins <- ddply(c, .(Year, Ranch, Block), BinSeason, num.bins = bins)
     dmg_sets <-  dlply(dmg,
-                       .(trt2),
+                       .(na.omit(trt2)),
                        merge,
                        y = seas_bins,
                        by = c("Year", "Ranch", "Block")

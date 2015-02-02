@@ -379,42 +379,35 @@ getTimeOfMD <- function(day.of.year){
 BinSeason <- function(df, num.bins = 8){
 
     ##require(plyr)
-    
+
     doy.segs <- SegmentVec(unique(df$DayOfYear), num.bins)
     means <- llply(doy.segs, function(seg){
-        
-        males <- subset(df, DayOfYear %in% seg)$Males
-        eggs <- subset(df, DayOfYear %in% seg)$Eggs
-        females <- subset(df, DayOfYear %in% seg)$Females
 
-        males <- mean(males, na.rm = TRUE)
-        eggs <- mean(eggs, na.rm = TRUE)
-        females <- mean(females, na.rm = TRUE)
+        bin_df <- subset(df, DayOfYear %in% seg)
+
+        males <- mean(bin_df$Males, na.rm = TRUE)
+        eggs <- mean(bin_df$Eggs, na.rm = TRUE)
+        females <- mean(bin_df$Females, na.rm = TRUE)
 
         means.list <- list(males,females,eggs)
         return(means.list)
     })
 
     means = unlist(means)
+    names(means) <- paste0(c("M", "F", "E"), rep(1:num.bins, each = 3))
 
-    c.names <- paste0(c("M", "F", "E"), rep(1:num.bins, each = 3))
-
-    names(means) <- c.names
-    
-    return(means)
+    means
 }
 
 SegmentVec <- function(vec, num.segs, ordered = TRUE){
 
     ##require(plyr)
-    v <- vec
-
     if(ordered){
-        v <- sort(v)
+        vec <- sort(vec)
     }
 
-    segs <- sort(rep(1:num.segs,length = length(v)))
-    segments <- llply(1:num.segs,function(i){ v[which(segs == i)] })
+    segs <- sort(rep(1:num.segs,length = length(vec)))
+    segments <- llply(1:num.segs,function(i){ vec[which(segs == i)] })
     return(segments)
 }
 
@@ -556,7 +549,11 @@ GetResiduals <- function(.subset = NULL,
     f <- as.formula(f)
 
     ## model
-    m1 <- try(glmer(f, data = .subset, family = .family), silent = FALSE)
+    m1 <- try(glmer(f,
+                    data = .subset,
+                    family = .family,
+                    na.action = na.exclude
+                    ))
     if (identical(class(m1), "try-error")) {
         return(NA) ##TODO make a better catch
     }

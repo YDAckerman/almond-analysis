@@ -3524,3 +3524,20 @@ residuals_set <- llply(dmg_sets, .fun = GetResiduals)
 ggplot(dmg, aes(x = as.factor(Block), y = DmgNOW / Tot_Nuts)) + geom_point(aes(size = Tot_Nuts)) + theme(axis.text.x = element_text(angle = 90, hjust = 0)) ## works
 
 ggplot(dmg, aes(x = as.factor(Block), y = DmgNOW / Tot_Nuts)) + geom_boxplot() + theme(axis.text.x = element_text(angle = 90, hjust = 0)) ## works
+
+## 2/2/15 ##
+
+## BinSeason works...
+
+## teachable moment: don't change your raw data files. Write functions
+## that make all the necessary adjustments so that you can start fresh
+## instances of your data in every session. DON'T depend on rda's! They
+## get messy, and leave vestiges of mistakes in every new session you
+## start.
+
+FindMissingInt <- function(v){
+
+    if(!is.numeric(v)) v <- as.numeric(v); warning("v has been altered")
+
+    Identical(1:length(v), names(v))
+}
