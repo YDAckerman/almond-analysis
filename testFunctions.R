@@ -75,13 +75,20 @@ testRunParametricCV <- function(K = 5,
 
 
 testRunParameticCVagainstResiduals <- function(K = 5,
-                                           bins = 5,
-                                           parallel = FALSE,
-                                           subset = NULL
+                                               bins = 5,
+                                               parallel = FALSE,
+                                               subset = NULL,
+                                               rescale = FALSE
                                            ) {
 
     cv_list <- dlply(dmg, .(na.omit(trt2)), FoldData, k = K, seed = 10)
     seas_bins <- ddply(c, .(Year, Ranch, Block), BinSeason, num.bins = bins)
+
+    if (rescale) {
+        rescaled <- llply(seas_bins[, 4:(3 + bins * 3)], rescaler)
+        seas_bins <- cbind(seas_bins[, 1:3], rescaled)
+    }
+
     dmg_sets <-  dlply(dmg,
                        .(na.omit(trt2)),
                        merge,

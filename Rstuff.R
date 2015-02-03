@@ -3564,3 +3564,14 @@ Seas_Bins <- ddply(c, .(Year, Ranch, Block), BinSeason, num.bins = bins)
 dmgTest <- merge(dmg, Seas_Bins, by = c("Year", "Ranch", "Block") )
 dmgTestLong <- melt(dmgTest, id = colnames(dmgTest)[1:75])
 ggplot(dmgTestLong, aes(x = value, y = DmgNOW/Tot_Nuts, color = variable)) + geom_point(size = 2)
+ggplot(dmgTestLong, aes(x = value, y = DmgNOW/Tot_Nuts)) + geom_point(size = 2) + facet_wrap( ~ variable)
+
+bins = 5
+Seas_Bins <- ddply(c, .(Year, Ranch, Block), BinSeason, num.bins = bins)
+rescaled <- llply(Seas_Bins[, 4:18], rescaler)
+Seas_Bins <- cbind(Seas_Bins[, 1:3], as.data.frame(rescaled))
+dmgTest <- merge(dmg, Seas_Bins, by = c("Year", "Ranch", "Block") )
+dmgTestLong <- melt(dmgTest, id = colnames(dmgTest)[1:75])
+ggplot(dmgTestLong, aes(x = value, y = DmgNOW/Tot_Nuts)) + geom_point(size = 2) + facet_wrap( ~ variable)
+ggplot(dmgTestLong, aes(x = variable, y = value)) + geom_point(size = 2)
+
