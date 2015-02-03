@@ -379,7 +379,7 @@ getTimeOfMD <- function(day.of.year){
 BinSeason <- function(df, num.bins = 8){
 
     ##require(plyr)
-
+    
     doy.segs <- SegmentVec(unique(df$DayOfYear), num.bins)
     means <- llply(doy.segs, function(seg){
 
@@ -561,3 +561,30 @@ GetResiduals <- function(.subset = NULL,
     residuals(m1)
 }
 
+ToDayOfYear <- function(date, format){
+    strptime(as.character(date), format)$yday + 1
+}
+
+rescale <- function(x) {
+
+    listBool <- is.list(x)
+    numBool <- is.numeric(x)
+
+    if (listBool) {
+        warning("coercing list to vector")
+        names <- names(x)
+        x <- unlist(x)
+    }
+
+    if (!is.numeric(x)) {
+
+        if(listBool){
+            return(list(names = x))
+        }
+        return(x)
+    }
+
+    x <- 100 * (x - min(x))/(max(x) - min(x))
+
+    list(names = x)
+}

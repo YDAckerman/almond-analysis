@@ -3554,3 +3554,13 @@ res <- ddply(res, .(TextID), transform, meanMSE = mean(MSE, na.rm = TRUE))
 ggplot(res, aes(x = TextID, y = meanCOR)) + geom_point(size = 2) + facet_grid( ~ trtmnt) + theme(text = element_text(size = 7), axis.text.x = element_text(angle = 90, hjust = 0)) ## works
 
 ggplot(subset(res, meanCOR > .3), aes(x = TextID, y = meanCOR)) + geom_point(size = 2) + facet_grid( ~ trtmnt) + theme(text = element_text(size = 7), axis.text.x = element_text(angle = 90, hjust = 0)) ## works
+
+
+## 1/3/15 ##
+
+## some plotting:
+bins = 2
+Seas_Bins <- ddply(c, .(Year, Ranch, Block), BinSeason, num.bins = bins)
+dmgTest <- merge(dmg, Seas_Bins, by = c("Year", "Ranch", "Block") )
+dmgTestLong <- melt(dmgTest, id = colnames(dmgTest)[1:75])
+ggplot(dmgTestLong, aes(x = value, y = DmgNOW/Tot_Nuts, color = variable)) + geom_point(size = 2)
