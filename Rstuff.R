@@ -3575,3 +3575,24 @@ dmgTestLong <- melt(dmgTest, id = colnames(dmgTest)[1:75])
 ggplot(dmgTestLong, aes(x = value, y = DmgNOW/Tot_Nuts)) + geom_point(size = 2) + facet_wrap( ~ variable)
 ggplot(dmgTestLong, aes(x = variable, y = value)) + geom_point(size = 2)
 
+res <- testRunParameticCVagainstResiduals(K = 10, bins = 2, parallel = TRUE, rescale = TRUE)
+
+res <- ddply(res, .(Model, trtmnt), transform, meanCOR = mean(COR, na.rm = TRUE))
+res <- ddply(res, .(Model, trtmnt), transform, meanMSE = mean(MSE, na.rm = TRUE))
+
+ggplot(res, aes(x = TextID, y = meanCOR)) + geom_point(size = 2) + facet_grid( ~ trtmnt, scale = "free") + theme(text = element_text(size = 7), axis.text.x = element_text(angle = 90, hjust = 0)) ## works
+
+ggplot(res, aes(x = TextID, y = meanMSE)) + geom_point(size = 2) + facet_grid( ~ trtmnt) + theme(text = element_text(size = 7), axis.text.x = element_text(angle = 90, hjust = 0)) ## works
+
+## can't believe I haven't looked at this yet
+ggplot(dmg, aes(x = trt2, y = DmgNOW / InfNOW)) + geom_boxplot()
+
+cor(dmg$InfNOW, dmg$DmgNOW, use = "pairwise.complete.obs")
+cor(dmg$Tot_Nuts, dmg$DmgNOW, use = "pairwise.complete.obs")
+cor(dmg$Tot_Nuts, dmg$InfNOW, use = "pairwise.complete.obs")
+
+## more models:
+
+res <- testRunParameticCVagainstResiduals(K = 10, bins = 3, parallel = TRUE, rescale = TRUE)
+
+ggplot(subset(res, meanCOR > .4), aes(x = Model, y = meanCOR)) + geom_point(size = 2) + facet_grid( ~ trtmnt, scale = "free") + theme(text = element_text(size = 7), axis.text.x = element_text(angle = 90, hjust = 0)) ## works

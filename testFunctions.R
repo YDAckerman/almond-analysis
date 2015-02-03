@@ -86,7 +86,7 @@ testRunParameticCVagainstResiduals <- function(K = 5,
 
     if (rescale) {
         rescaled <- llply(seas_bins[, 4:(3 + bins * 3)], rescaler)
-        seas_bins <- cbind(seas_bins[, 1:3], rescaled)
+        seas_bins <- cbind(seas_bins[, 1:3], as.data.frame(rescaled))
     }
 
     dmg_sets <-  dlply(dmg,
@@ -102,8 +102,8 @@ testRunParameticCVagainstResiduals <- function(K = 5,
 
     insect_grid <- expand.grid(insect_vars, stringsAsFactors = FALSE)
     colnames(insect_grid) <- c("V1", "V2", "V3")
-    insect_grid$TextID <- apply(insect_grid, 1, paste, collapse = "+")
-    insect_grid$NumID <- 1:((bins + 1)^3)
+    insect_grid$Model <- apply(insect_grid, 1, paste, collapse = "+")
+    insect_grid$ModelID <- 1:((bins + 1)^3)
 
 
     res_sets <- llply(dmg_sets, GetResiduals)

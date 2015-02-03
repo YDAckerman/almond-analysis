@@ -147,7 +147,7 @@ RunParametricCVagainstResiduals <- function(V1,
     MSE <- NA
 
     if (sum(is.na(c(V1,V2,V3))) != 3)  {
-        if (is.null(.cv_list)  || is.null(dmg_sets) || is.null(.res_sets)){
+        if (is.null(.cv_list)  || is.null(.dmg_sets) || is.null(.res_sets)){
             stop("Please add .cv_list & dmg_sets & .res_sets")
         }
 
@@ -155,7 +155,7 @@ RunParametricCVagainstResiduals <- function(V1,
 
         ## I'll d.f instead of merge so I can access by name?
         res_df <- data.frame(RES = .res_sets[[trtmnt]],
-                             (dmg_sets[[trtmnt]])[, vars]
+                             (.dmg_sets[[trtmnt]])[, vars]
                              )
         if (fold == 0) {
             m <- lm(RES ~ ., data = res_df, na.action = na.exclude)
