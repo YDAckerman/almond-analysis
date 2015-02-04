@@ -3595,7 +3595,7 @@ cor(dmg$Tot_Nuts, dmg$InfNOW, use = "pairwise.complete.obs")
 
 res <- testRunParameticCVagainstResiduals(K = 10, bins = 3, parallel = TRUE, rescale = TRUE)
 
-ggplot(subset(res, meanCOR > .4 & fold != 0), aes(x = Model, y = meanCOR)) + geom_point(size = 2) + facet_grid( ~ trtmnt, scale = "free") + theme(text = element_text(size = 7), axis.text.x = element_text(angle = 90, hjust = 0)) ## works
+ggplot(subset(res, R2 > .15), aes(x = Model, y = R2)) + geom_point(size = 2) + facet_grid( ~ trtmnt, scale = "free") + theme(text = element_text(size = 7), axis.text.x = element_text(angle = 90, hjust = 0)) ## works
 
 ## 2/4/15 ##
 
@@ -3613,5 +3613,11 @@ resCV <- ddply(subset(res, fold != 0), .(Model, trtmnt), transform, meanCOR = me
 ggplot(resCV, aes(x = ModelID, y = meanCOR)) + geom_point(size = 2) + facet_grid( ~ trtmnt) + theme(text = element_text(size = 7), axis.text.x = element_text(angle = 90, hjust = 0)) ## works
 
 ggplot(resCV, aes(x = ModelID, y = meanMSE)) + geom_point(size = 2) + facet_grid( ~ trtmnt) + theme(text = element_text(size = 7), axis.text.x = element_text(angle = 90, hjust = 0)) ## works
+
+res <- testRunParameticCVagainstResiduals(K = 10, bins = 3, parallel = TRUE, rescale = TRUE, response = "D")
+
+ggplot(res, aes(x = ModelID, y = R2)) + geom_point(size = 2) + facet_grid( ~ trtmnt) + theme(text = element_text(size = 7), axis.text.x = element_text(angle = 90, hjust = 0)) ## works
+
+res <- testRunParameticCVagainstResiduals(K = 10, bins = 3, parallel = TRUE, rescale = TRUE, response = "LD")
 
 res <- testRunParameticCVagainstResiduals(K = 10, bins = 3, parallel = TRUE, rescale = TRUE, response = "I")

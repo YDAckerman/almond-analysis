@@ -145,6 +145,8 @@ RunParametricCVagainstResiduals <- function(V1,
 
     COR <- NA
     MSE <- NA
+    R2 <- NA
+    predR2 <- NA
 
     if (sum(is.na(c(V1,V2,V3))) != 3)  {
         if (is.null(.cv_list)  || is.null(.dmg_sets) || is.null(.res_sets)){
@@ -158,12 +160,17 @@ RunParametricCVagainstResiduals <- function(V1,
                              (.dmg_sets[[trtmnt]])[, vars]
                              )
         if (fold == 0) {
+
             m <- lm(RES ~ ., data = res_df, na.action = na.exclude)
             fit <- fitted(m, na.action = na.exclude)
+
             MSE <- mean((residuals(m))^2, na.rm = TRUE)
             COR <- cor(fit, res_df$RES, use = "pairwise.complete.obs")
+            R2 <- summary(m)$adj.r.squared
+            predR2 <- pred_r_squared(m)
 
         } else {
+
             ## split for CV (is this cv even legit?)
             rtrain <- res_df[-.cv_list[[trtmnt]][[fold]], ]
             rtest <- res_df[.cv_list[[trtmnt]][[fold]], ]
@@ -179,7 +186,7 @@ RunParametricCVagainstResiduals <- function(V1,
         }
     }
 
-    data.frame('COR' = COR, 'MSE' = MSE)
+    data.frame('COR' = COR, 'MSE' = MSE, 'R2' = R2, 'predR2' = predR2)
 }
 
 
