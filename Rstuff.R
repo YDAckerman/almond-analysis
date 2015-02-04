@@ -3595,4 +3595,23 @@ cor(dmg$Tot_Nuts, dmg$InfNOW, use = "pairwise.complete.obs")
 
 res <- testRunParameticCVagainstResiduals(K = 10, bins = 3, parallel = TRUE, rescale = TRUE)
 
-ggplot(subset(res, meanCOR > .4), aes(x = Model, y = meanCOR)) + geom_point(size = 2) + facet_grid( ~ trtmnt, scale = "free") + theme(text = element_text(size = 7), axis.text.x = element_text(angle = 90, hjust = 0)) ## works
+ggplot(subset(res, meanCOR > .4 & fold != 0), aes(x = Model, y = meanCOR)) + geom_point(size = 2) + facet_grid( ~ trtmnt, scale = "free") + theme(text = element_text(size = 7), axis.text.x = element_text(angle = 90, hjust = 0)) ## works
+
+## 2/4/15 ##
+
+ggplot(dmg, aes(x = trt2, y = DmgNOW / Tot_Nuts)) + geom_boxplot()
+
+ggplot(dmg, aes(x = trt2, y = InfNOW / Tot_Nuts)) + geom_boxplot()
+
+res <- testRunParameticCVagainstResiduals(K = 10, bins = 3, parallel = TRUE, rescale = TRUE, response = "LD")
+
+ggplot(res, aes(x = ModelID, y = COR)) + geom_point(size = 2) + facet_grid( ~ trtmnt) + theme(text = element_text(size = 7), axis.text.x = element_text(angle = 90, hjust = 0)) ## works
+
+resCV <- ddply(subset(res, fold != 0), .(Model, trtmnt), transform, meanCOR = mean(COR, na.rm = TRUE))
+resCV <- ddply(subset(res, fold != 0), .(Model, trtmnt), transform, meanCOR = mean(COR, na.rm = TRUE))
+
+ggplot(resCV, aes(x = ModelID, y = meanCOR)) + geom_point(size = 2) + facet_grid( ~ trtmnt) + theme(text = element_text(size = 7), axis.text.x = element_text(angle = 90, hjust = 0)) ## works
+
+ggplot(resCV, aes(x = ModelID, y = meanMSE)) + geom_point(size = 2) + facet_grid( ~ trtmnt) + theme(text = element_text(size = 7), axis.text.x = element_text(angle = 90, hjust = 0)) ## works
+
+res <- testRunParameticCVagainstResiduals(K = 10, bins = 3, parallel = TRUE, rescale = TRUE, response = "I")

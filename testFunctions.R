@@ -78,7 +78,8 @@ testRunParameticCVagainstResiduals <- function(K = 5,
                                                bins = 5,
                                                parallel = FALSE,
                                                subset = NULL,
-                                               rescale = FALSE
+                                               rescale = FALSE,
+                                               response = "D"
                                            ) {
 
     cv_list <- dlply(dmg, .(na.omit(trt2)), FoldData, k = K, seed = 10)
@@ -106,7 +107,16 @@ testRunParameticCVagainstResiduals <- function(K = 5,
     insect_grid$ModelID <- 1:((bins + 1)^3)
 
 
-    res_sets <- llply(dmg_sets, GetResiduals)
+    family <- switch(response,
+                     D =, I =, ID = "binomial",
+                     LD =, LI =, LID = "poisson"
+                     )
+
+    res_sets <- llply(dmg_sets, GetResiduals,
+                      .response = response,
+                      .family = family
+                      )
+
     val_grid <- c(insect_vars,
                      list(as.character(na.omit(unique(dmg$trt2)))),
                      list(0:K)
