@@ -2,12 +2,6 @@
 ## My R-comprehension (and thus style) evolves quite a bit thoughout.
 ## Scroll all the way down to see what I've been up to lately.
 
-
-##---- General Use ----##
-
-## functions:
-source("../almond/R/testFunctions.R")
-
 ######## 10.2.14 ########
 
 db = sapply(unique(SF$TrapSite),function(x){
@@ -3621,3 +3615,31 @@ ggplot(res, aes(x = ModelID, y = R2)) + geom_point(size = 2) + facet_grid( ~ trt
 res <- testRunParameticCVagainstResiduals(K = 10, bins = 3, parallel = TRUE, rescale = TRUE, response = "LD")
 
 res <- testRunParameticCVagainstResiduals(K = 10, bins = 3, parallel = TRUE, rescale = TRUE, response = "I")
+
+## 2/5/15 ##
+
+## Spoke with Jay yesterday. new things to do:
+
+## Must Know for Traps:
+
+## delta/ovip - catches adult females. uses a lure of almond meal. ->> female-almondMeal
+## egg traps - catches eggs. lures females using almond meal. ->> egg-almondMeal
+## LurePhero - (2013 only) synthetic pheromone lure for females. ->> male-syntheticPheromone
+## phero (all but 2013) - traps baited with virgin females. ->> male-virginFemale
+## flight - (2013 only) virgin female traps. ->> male-virginFemale
+
+## Replace “phero & flight” with VirginLure
+## Replace “LurePhero” with SynthPhero
+
+## TRY:
+
+## seasoning average for each M, F, E alone. (try regardless of autocorrelation)
+## just use proportions
+## example plots: residual ~ season-long av of (e.g. F)
+## combine multiple samples from a given block into a single sample (pool them all)
+## just look at nonpareil
+## look at damage variation within tree age
+
+## done:
+## traps renamed
+## now :combine multiple samples from a given block into a single sample.

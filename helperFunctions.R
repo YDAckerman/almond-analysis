@@ -505,7 +505,7 @@ MakeIndices <- function(tmnt, num = 10){
     i <- replicate(num, sample(1:nrow(df), nrow(df), rep = TRUE))
 }
 
-FoldData <- function(df, k = 5, random = TRUE, seed = NULL){
+FoldData <- function(df, k = 5, random = TRUE, .seed = NULL){
     ## @Function FoldData
     ## @Params:
     ##   - df dataframe: data to be used for CV
@@ -610,3 +610,16 @@ PRESS <- function(linear.model) {
 ##
 #########################
 #########################
+
+RenameTraps <- function(type){
+    is.na(type) && return(NA)
+    new_type <- switch(as.character(type),
+                       'Egg' = "egg-almondMeal",
+                       'Delta/Ovip' = "female-almondMeal",
+                       'Flight' = "male-virginFemale",
+                       'LurePhero' = "male-syntheticPhero",
+                       'Phero' = "male-virginFemale"
+                       )
+
+}
+
