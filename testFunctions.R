@@ -194,7 +194,7 @@ testRunSimplePredModel <-  function(K = 5,
                     1,
                     function(x) paste(na.omit(x), collapse = "+")
                     )
-    insect_grid$RHS <- rhs
+    insect_grid$rhs <- rhs
 
     ## do we rescale the insect variables (?):
     if (rescale) {
@@ -208,7 +208,8 @@ testRunSimplePredModel <-  function(K = 5,
                          y = seas_bins,
                          by = c("Year", "Ranch", "Block")
                          )
-
+    l_ply(dmgNP_sets, function(x) print(dim(x)))
+    stop()
     val_grid <- expand.grid(rhs,
                         as.character(na.omit(unique(dmgNP$trt2))),
                         0:K,

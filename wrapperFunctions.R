@@ -288,9 +288,7 @@ RunSimplePredModel <- function(rhs,
 
     COR <- NA
     MSE <- NA
-    R2 <- NA
-    predR2 <- NA
-
+    VAR <- NA
 
     if (is.null(.cv_list)  || is.null(.dmg_sets)){
         stop("Please add .cv_list & dmg_sets & .res_sets")
@@ -311,11 +309,11 @@ RunSimplePredModel <- function(rhs,
                   na.action = na.exclude
                   )
 
-        fit <- fitted(m, na.action = na.exclude)
+        fit <- predict(m, type = "response", na.action = na.exclude)
 
         MSE <- mean((residuals(m))^2, na.rm = TRUE)
         COR <- cor(fit, reg_df[, .lhs], use = "pairwise.complete.obs")
-        R2 <- summary(m)$adj.r.squared
+        VAR <- var(residuals(m))
 
     } else {
 
@@ -331,7 +329,9 @@ RunSimplePredModel <- function(rhs,
 
         MSE <- mean((preds - rtest[, .lhs])^2, na.rm = TRUE)
         COR <- cor(preds, rtest[, .lhs], use = "pairwise.complete.obs")
+        VAR <- var(preds - rtest[, .lhs], na.rm = TRUE)
     }
 
-    data.frame('COR' = COR, 'MSE' = MSE, 'R2' = R2, 'predR2' = predR2)
+    data.frame('COR' = COR, 'MSE' = MSE, 'VAR' = VAR)
+
 }

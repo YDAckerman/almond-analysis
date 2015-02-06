@@ -3643,3 +3643,28 @@ res <- testRunParameticCVagainstResiduals(K = 10, bins = 3, parallel = TRUE, res
 ## done:
 ## traps renamed
 ## now :combine multiple samples from a given block into a single sample.
+
+dmgNP <- subset(dmg, Variety == "NP")
+dmgNP <- ddply(dmgNP, .(Year, Ranch, Block, trt2), summarize,
+               Tot_Nuts = sum(Tot_Nuts, na.rm = TRUE),
+               DmgNOW = sum(DmgNOW, na.rm = TRUE),
+               InfNOW = sum(InfNOW, na.rm = TRUE)
+               )
+
+## 2/6/15 ##
+
+res <- testRunSimplePredModel(K = 10, bins = 3, rescale = TRUE)
+
+## it looks like sample size doesn't really affect number damaged:
+
+ggplot(dmg, aes(x = Tot_Nuts, y = DmgNOW)) + geom_point(size = 3)
+
+## results:
+resCount <- testRunSimplePredModel(K = 10, bins = 3, rescale = TRUE, parallel = TRUE, lhs = "DmgNOW")
+
+resProp <- testRunSimplePredModel(K = 10, bins = 3, rescale = TRUE, parallel = TRUE, lhs = "PDT")
+
+resCountCV <- ddply(subset(resCount, fold != 0), .(rhs, trtmnt), transform, meanCOR = mean(COR, na.rm = TRUE))
+ggplot(resCountCV, aes(x = rhs, y = meanCOR)) + geom_point(size = 2) + facet_wrap(~ trtmnt)
+
+ddply(resCountCV, .(trtmnt), summarize, mc = max(meanCOR))
