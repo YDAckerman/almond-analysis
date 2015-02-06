@@ -3650,14 +3650,16 @@ dmgNP <- ddply(dmgNP, .(Year, Ranch, Block, trt2), summarize,
                DmgNOW = sum(DmgNOW, na.rm = TRUE),
                InfNOW = sum(InfNOW, na.rm = TRUE)
                )
+dmgSUM <- ddply(dmg, .(Year, Ranch, Block, trt2), summarize,
+               Tot_Nuts = sum(Tot_Nuts, na.rm = TRUE),
+               DmgNOW = sum(DmgNOW, na.rm = TRUE),
+               InfNOW = sum(InfNOW, na.rm = TRUE)
+               )
 
 ## 2/6/15 ##
 
 res <- testRunSimplePredModel(K = 10, bins = 3, rescale = TRUE)
 
-## it looks like sample size doesn't really affect number damaged:
-
-ggplot(dmg, aes(x = Tot_Nuts, y = DmgNOW)) + geom_point(size = 3)
 
 ## results:
 resCount <- testRunSimplePredModel(K = 10, bins = 3, rescale = TRUE, parallel = TRUE, lhs = "DmgNOW")
@@ -3668,3 +3670,25 @@ resCountCV <- ddply(subset(resCount, fold != 0), .(rhs, trtmnt), transform, mean
 ggplot(resCountCV, aes(x = rhs, y = meanCOR)) + geom_point(size = 2) + facet_wrap(~ trtmnt)
 
 ddply(resCountCV, .(trtmnt), summarize, mc = max(meanCOR))
+
+resCountCVsubset <- subset(resCountCV, grepl("M1", rhs) & grepl("M2", rhs) & grepl("M3", rhs))
+
+DOY <- sapply(dmg$Date2, ToDayOfYear, format = "%F")
+sampleTaken <- sapply(DOY,
+                      function(x){
+                          if(is.na(x)){return(x)}
+                          if (x < 260) {return("E")} else {return("L")}
+                      })
+
+## it looks like sample size doesn't really affect number damaged:
+
+ggplot(dmg, aes(x = Tot_Nuts, y = DmgNOW, colour = SampleTime)) + geom_point(size = 3)
+ggplot(dmg, aes(x = Tot_Nuts, y = InfNOW)) + geom_point(size = 3)
+
+## wait a minute:
+ggplot(dmgSUM, aes(x = Tot_Nuts, y = DmgNOW)) + geom_point(size = 3)
+ggplot(dmgSUM, aes(x = Tot_Nuts, y = InfNOW)) + geom_point(size = 3)
+
+
+## But for NP, all samples are taken at an early date:
+ggplot(dmgNP, aes(x = Tot_Nuts, y = DmgNOW)) + geom_point(size = 2)

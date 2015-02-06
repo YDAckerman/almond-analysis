@@ -162,14 +162,15 @@ testRunSimplePredModel <-  function(K = 5,
 
     ## For these results, we're going to subset by
     ## non-pareil and combine all the samples from the
-    ## same block:
+    ## same ranch,block,year combinations:
     dmgNP <- subset(dmg, Variety == "NP")
     dmgNP <- ddply(dmgNP, .(Year, Ranch, Block, trt2), summarize,
-               Tot_Nuts = sum(Tot_Nuts, na.rm = TRUE),
-               DmgNOW = sum(DmgNOW, na.rm = TRUE),
-               InfNOW = sum(InfNOW, na.rm = TRUE)
+                   Tot_Nuts = sum(Tot_Nuts, na.rm = TRUE),
+                   DmgNOW = sum(DmgNOW, na.rm = TRUE),
+                   InfNOW = sum(InfNOW, na.rm = TRUE)
                    )
 
+    return(dmgNP)
     dmgNP <- ddply(dmgNP, .(), transform,
                    PDT = DmgNOW / Tot_Nuts,
                    PIT = InfNOW / Tot_Nuts,
@@ -195,6 +196,7 @@ testRunSimplePredModel <-  function(K = 5,
                     function(x) paste(na.omit(x), collapse = "+")
                     )
     insect_grid$rhs <- rhs
+    insect_grid$ModelID <- 1:length(rhs)
 
     ## do we rescale the insect variables (?):
     if (rescale) {
@@ -208,8 +210,7 @@ testRunSimplePredModel <-  function(K = 5,
                          y = seas_bins,
                          by = c("Year", "Ranch", "Block")
                          )
-    l_ply(dmgNP_sets, function(x) print(dim(x)))
-    stop()
+
     val_grid <- expand.grid(rhs,
                         as.character(na.omit(unique(dmgNP$trt2))),
                         0:K,
