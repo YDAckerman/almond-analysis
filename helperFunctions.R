@@ -514,7 +514,7 @@ FoldData <- function(df, k = 5, random = TRUE, .seed = NULL){
     ##   - seed integer vector: sets a seed for reproducability
     ## @Output: a list of integer vector folds
 
-    if (!is.null(seed)) { set.seed(seed) }
+    if (!is.null(.seed)) { set.seed(.seed) }
 
     if (!is.logical(random)) {
         warning("random must be logical; setting to TRUE")

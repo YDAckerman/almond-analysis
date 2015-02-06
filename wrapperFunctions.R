@@ -126,9 +126,7 @@ RunParametricCV <- function(type,
 
 
 
-RunParametricCVagainstResiduals <- function(V1,
-                                            V2,
-                                            V3,
+RunParametricCVagainstResiduals <- function(V1, V2, V3,
                                             trtmnt,
                                             fold = NULL,
                                             .res_sets = NULL,
@@ -276,14 +274,12 @@ RunPredictiveModelWithCV <- function(.bin,
     data.frame("COR" = COR, "MSE" = MSE, "AIC" = AIC)
 }
 
-RunSimplePredModel <- function(V1,
-                               V2,
-                               V3,
+RunSimplePredModel <- function(rhs,
                                trtmnt,
                                fold = NULL,
                                .dmg_sets = NULL,
                                .cv_list = NULL,
-                               .response = "LD"
+                               .lhs = "PDT"
                                ) {
 
 
@@ -295,56 +291,46 @@ RunSimplePredModel <- function(V1,
     R2 <- NA
     predR2 <- NA
 
-    if (sum(is.na(c(V1,V2,V3))) != 3)  {
-        if (is.null(.cv_list)  || is.null(.dmg_sets) || is.null(.res_sets)){
-            stop("Please add .cv_list & dmg_sets & .res_sets")
-        }
 
-        resp_var <- switch(.response,
-                           LD = "DmgNOW / Tot_Nuts",
-                           LI = "InfNOW / Tot_Nuts",
-                           LID = "DmgNOW / InfNOW"
-                           )
+    if (is.null(.cv_list)  || is.null(.dmg_sets)){
+        stop("Please add .cv_list & dmg_sets & .res_sets")
+    }
 
-        pred_vars <- as.vector(na.omit(c(V1, V2, V3)))
+    f <- paste0(.lhs, "~", rhs)
+    f <- as.formula(f)
 
-        f <- paste0(resp_var, "~", paste(pred_vars, collapse = "+"))
-        f <- as.formula(f)
+    ## we'll just do a regression directly on the data
+    ## as opposed to on residuals from another model.
+    reg_df <- .dmg_sets[[trtmnt]]
 
-        ## we'll just do a regression directly on the data
-        ## as opposed to on residuals from another model.
-        reg_df <- .dmg_sets[[trtmnt]]
+    if (fold == 0) {
 
-        if (fold == 0) {
+        m <- glm2(f,
+                  data = reg_df,
+                  family = "poisson",
+                  na.action = na.exclude
+                  )
 
-            m <- glm2(f,
-                      data = reg_df,
-                      family = "poisson",
-                      na.action = na.exclude
-                      )
+        fit <- fitted(m, na.action = na.exclude)
 
-            fit <- fitted(m, na.action = na.exclude)
+        MSE <- mean((residuals(m))^2, na.rm = TRUE)
+        COR <- cor(fit, reg_df[, .lhs], use = "pairwise.complete.obs")
+        R2 <- summary(m)$adj.r.squared
 
-            MSE <- mean((residuals(m))^2, na.rm = TRUE)
-            COR <- cor(fit, reg_df$RES, use = "pairwise.complete.obs")
-            R2 <- summary(m)$adj.r.squared
-            predR2 <- pred_r_squared(m)
+    } else {
 
-        } else {
+        ## split for CV (is this cv even legit?)
+        rtrain <- reg_df[-.cv_list[[trtmnt]][[fold]], ]
+        rtest <- reg_df[.cv_list[[trtmnt]][[fold]], ]
 
-            ## split for CV (is this cv even legit?)
-            rtrain <- reg_df[-.cv_list[[trtmnt]][[fold]], ]
-            rtest <- reg_df[.cv_list[[trtmnt]][[fold]], ]
+        ## formula
+        m <- glm2(f, data = rtrain, family = "poisson")
 
-            ## formula
-            m <- glm2(f, data = rtrain, family = "poisson")
+        ## Make predictions:
+        preds <- predict(m, newdata = rtest)
 
-            ## Make predictions:
-            preds <- predict(m, newdata = rtest)
-
-            MSE <- mean((preds - rtest$RES)^2, na.rm = TRUE)
-            COR <- cor(preds, rtest$RES, use = "pairwise.complete.obs")
-        }
+        MSE <- mean((preds - rtest[, .lhs])^2, na.rm = TRUE)
+        COR <- cor(preds, rtest[, .lhs], use = "pairwise.complete.obs")
     }
 
     data.frame('COR' = COR, 'MSE' = MSE, 'R2' = R2, 'predR2' = predR2)

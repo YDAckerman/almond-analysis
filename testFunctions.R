@@ -156,7 +156,8 @@ testRunSimplePredModel <-  function(K = 5,
                                     bins = 5,
                                     rescale = FALSE,
                                     seed = 10,
-                                    parallel = FALSE
+                                    parallel = FALSE,
+                                    lhs = "PDT"
                                     ){
 
     ## For these results, we're going to subset by
@@ -167,7 +168,13 @@ testRunSimplePredModel <-  function(K = 5,
                Tot_Nuts = sum(Tot_Nuts, na.rm = TRUE),
                DmgNOW = sum(DmgNOW, na.rm = TRUE),
                InfNOW = sum(InfNOW, na.rm = TRUE)
-               )
+                   )
+
+    dmgNP <- ddply(dmgNP, .(), transform,
+                   PDT = DmgNOW / Tot_Nuts,
+                   PIT = InfNOW / Tot_Nuts,
+                   PDI = DmgNOW / Tot_Nuts
+                   )
 
     cv_list <- dlply(dmgNP, .(na.omit(trt2)), FoldData, k = K, .seed = seed)
     seas_bins <- ddply(c, .(Year, Ranch, Block), BinSeason, num.bins = bins)
@@ -178,17 +185,16 @@ testRunSimplePredModel <-  function(K = 5,
     insect_vars <- c(paste0(c("M", "E", "F"), rep(1:bins, each = 3)), NA, NA)
 
     ## find combinations:
-    insect_combs <- combn(insect_vars, 3)
+    insect_combs <- t(combn(insect_vars, 3))
 
     ## make key:
-    insect_grid <- as.data.frame(t(insect_combs))
+    insect_grid <- as.data.frame(insect_combs)
     colnames(insect_grid) <- c("V1", "V2", "V3")
-    models <- apply(insect_combs,
-                    2,
+    rhs <- apply(insect_combs,
+                    1,
                     function(x) paste(na.omit(x), collapse = "+")
                     )
-    insect_grid$Model <- models
-
+    insect_grid$RHS <- rhs
 
     ## do we rescale the insect variables (?):
     if (rescale) {
@@ -203,13 +209,13 @@ testRunSimplePredModel <-  function(K = 5,
                          by = c("Year", "Ranch", "Block")
                          )
 
-    val_grid <- expand.grid(models,
+    val_grid <- expand.grid(rhs,
                         as.character(na.omit(unique(dmgNP$trt2))),
                         0:K,
                         stringsAsFactors = FALSE
                         )
 
-    colnames(val_grid) <- c("model", "trtmnt", "fold")
+    colnames(val_grid) <- c("rhs", "trtmnt", "fold")
 
     if (parallel) {registerDoMC(cores = 4)}
 
@@ -219,12 +225,13 @@ testRunSimplePredModel <-  function(K = 5,
                      RunSimplePredModel,
                      .dmg_sets = dmgNP_sets,
                      .cv_list = cv_list,
+                     .lhs = lhs,
                      .progress = "text",
                      .parallel = parallel,
                      .paropts = par_opts,
                      .inform = TRUE
                      )
 
-    merge(results, insect_grid, by = c("V1", "V2", "V3"))
+    merge(results, insect_grid, by = c("rhs"))
 
 }
