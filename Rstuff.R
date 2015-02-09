@@ -3633,7 +3633,7 @@ res <- testRunParameticCVagainstResiduals(K = 10, bins = 3, parallel = TRUE, res
 
 ## TRY:
 
-## seasoning average for each M, F, E alone. (try regardless of autocorrelation)
+## season average for each M, F, E alone. (try regardless of autocorrelation)
 ## just use proportions
 ## example plots: residual ~ season-long av of (e.g. F)
 ## combine multiple samples from a given block into a single sample (pool them all)
@@ -3642,7 +3642,10 @@ res <- testRunParameticCVagainstResiduals(K = 10, bins = 3, parallel = TRUE, res
 
 ## done:
 ## traps renamed
-## now :combine multiple samples from a given block into a single sample.
+## combine multiple samples from a given block into a single sample.
+## just look at nonpareil
+## look at damage variation within tree age
+## just use proportions
 
 dmgNP <- subset(dmg, Variety == "NP")
 dmgNP <- ddply(dmgNP, .(Year, Ranch, Block, trt2), summarize,
@@ -3692,3 +3695,46 @@ ggplot(dmgSUM, aes(x = Tot_Nuts, y = InfNOW)) + geom_point(size = 3)
 
 ## But for NP, all samples are taken at an early date:
 ggplot(dmgNP, aes(x = Tot_Nuts, y = DmgNOW)) + geom_point(size = 2)
+
+## 2/9/15 ##
+resCount <- testRunSimplePredModel(K = 10, bins = 3, rescale = TRUE, parallel = TRUE, lhs = "DmgNOW")
+
+resProp <- testRunSimplePredModel(K = 10, bins = 3, rescale = TRUE, parallel = TRUE, lhs = "PDT")
+
+resP <- subset(resProp,
+               rhs %in% c("M1+M2+M3",
+                          "E1+E2+E3",
+                          "F1+F2+F3",
+                          paste0(c("M","E","F"), rep(1:3, each = 3))
+                          )
+               )
+
+resC <- subset(resCount,
+               rhs %in% c("M1+M2+M3",
+                          "E1+E2+E3",
+                          "F1+F2+F3",
+                          paste0(c("M","E","F"), rep(1:3, each = 3))
+                          )
+               )
+
+
+resPM <- ddply(subset(resP, fold != 0), .(rhs, trtmnt), summarize,
+              meanCOR = mean(COR, na.rm = TRUE),
+              meanVAR = mean(VAR, na.rm = TRUE),
+              meanMSE = mean(MSE, na.rm = TRUE)
+              )
+
+resCM <- ddply(subset(resC, fold != 0), .(rhs, trtmnt), summarize,
+              meanCOR = mean(COR, na.rm = TRUE),
+              meanVAR = mean(VAR, na.rm = TRUE),
+              meanMSE = mean(MSE, na.rm = TRUE)
+              )
+
+
+ggplot(subset(resP, fold == 0), aes(x = rhs, y = COR)) +geom_point(size = 2) + facet_wrap(~trtmnt, scale = "free") + theme(axis.text.x = element_text(angle = 90, hjust = 0)) ## works
+
+ggplot(resCM, aes(x = rhs, y = meanCOR)) + geom_point(size = 2) + facet_wrap(~trtmnt, scale = "free") + theme(axis.text.x = element_text(angle = 90, hjust = 0)) ## works
+
+ggplot(resCM, aes(x = rhs, y = meanVAR)) + geom_point(size = 2) + facet_wrap(~trtmnt, scale = "free") + theme(axis.text.x = element_text(angle = 90, hjust = 0)) ## works
+
+ggplot(resCM, aes(x = rhs, y = meanMSE)) + geom_point(size = 2) + facet_wrap(~trtmnt, scale = "free") + theme(axis.text.x = element_text(angle = 90, hjust = 0)) ## works

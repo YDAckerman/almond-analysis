@@ -463,41 +463,48 @@ BuildTreatment <- function(df){
 
 
 
-RunBoost <- function(df){
+## RunBoost <- function(df){
 
-    require(gbm)
-    boost.dmg <- gbm( DmgNOW ~ M1 + M2 + M3 + M4  + F1 + F2 + F3 + F4 + E1 + E2 + E3 + E4, data = df, distribution = "poisson", n.trees = 5000, interaction.depth = 4)
-    result <- summary(boost.dmg)
-    #result <- t(as.data.frame(t(results)[2,]))
-    return(result)
-}
+##     require(gbm)
+##     boost.dmg <- gbm( DmgNOW ~ M1 + M2 + M3 + M4  + F1 + F2 + F3 + F4 + E1 + E2 + E3 + E4, data = df, distribution = "poisson", n.trees = 5000, interaction.depth = 4)
+##     result <- summary(boost.dmg)
+##     #result <- t(as.data.frame(t(results)[2,]))
+##     return(result)
+## }
 
-RunForest <- function(df){
+RunForest <- function(df, bins, response){
 
     require(randomForest)
-    rf.dmg <- randomForest(DmgNOW ~ M1 + M2 + M3 + M4  + F1 + F2 + F3 + F4 + E1 + E2 + E3 + E4, data = df, mtry = 3, importance = TRUE)
-    results <- t(as.data.frame(t(importance(rf.dmg))[1,]))
+
+    vars <- paste(
+        paste0(c("M", "E", "F"), rep(1:bins, each = 3)),
+        collapse = "+"
+        )
+
+    f <- as.formula(paste(response, vars), collapse = "~")
+    rfDmg <- randomForest(f, data = df, mtry = 3, importance = TRUE)
+    results <- t(as.data.frame(t(importance(rfDmg))[1,]))
     return(results)
 }
 
 
 
 
-aic.boot.fn <- function(data, index, f){
-    ## @Function aic.boot.fn
-    ## use: helper function for (pseudo) boot call
-    ## @Param:
-    ##  -data - the dataset
-    ##  -index - indices of the subset
-    ##  -f - formula to use in glmer call
-    ## @Out: NA if model fails, AIC if model succeeds
+## aic.boot.fn <- function(data, index, f){
+##     ## @Function aic.boot.fn
+##     ## use: helper function for (pseudo) boot call
+##     ## @Param:
+##     ##  -data - the dataset
+##     ##  -index - indices of the subset
+##     ##  -f - formula to use in glmer call
+##     ## @Out: NA if model fails, AIC if model succeeds
 
-    new_data = data[index,]
-    m <- try(glmer(formula = f, data = new_data, family = "binomial"),
-             silent = TRUE)
-    if (identical(m, "try-error") ) { return(NA) }
-    AIC(m)
-}
+##     new_data = data[index,]
+##     m <- try(glmer(formula = f, data = new_data, family = "binomial"),
+##              silent = TRUE)
+##     if (identical(m, "try-error") ) { return(NA) }
+##     AIC(m)
+## }
 
 
 MakeIndices <- function(tmnt, num = 10){
@@ -599,4 +606,3 @@ RenameTraps <- function(type){
                        )
 
 }
-

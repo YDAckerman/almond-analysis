@@ -170,7 +170,7 @@ testRunSimplePredModel <-  function(K = 5,
                    InfNOW = sum(InfNOW, na.rm = TRUE)
                    )
 
-    return(dmgNP)
+    ##return(dmgNP)
     dmgNP <- ddply(dmgNP, .(), transform,
                    PDT = DmgNOW / Tot_Nuts,
                    PIT = InfNOW / Tot_Nuts,
