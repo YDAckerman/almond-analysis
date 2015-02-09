@@ -679,3 +679,39 @@ AssembleInsectCombs <- function(test = NULL, ...){
     }
     return(NULL)
 }
+
+drawModel <- function(trtmnt = "CONV",
+                      v1 = "F1", v2 = "F2", v3 = "F3",
+                      individual = FALSE
+                      ){
+
+    AssembleData(test = "testRunSimplePredModel",
+                 K = 0,
+                 rescale = FALSE,
+                 bins = 3,
+                 seed = 10
+             )
+
+    set <- dmgNP_sets[[trtmnt]]
+
+    if (individual) {
+        forPlot <- melt(set,
+                        id = setdiff(colnames(set),
+                            na.omit(c(v1, v2, v3)))
+                        )
+        ggplot(forPlot, aes( x = value, y = PDT)) +
+            geom_point(size = 2) +
+                facet_wrap(~variable, scale = "free")
+    } else {
+        vars <- paste(na.omit(c(v1, v2, v3)), collapse = "+")
+        f <- as.formula(paste(c("PDT", vars), collapse = "~"))
+        m <- glm2(f,
+                  family = "poisson",
+                  data = set,
+                  na.action = na.exclude
+                  )
+        set$preds <- predict(m, type = "response")
+        ggplot(set, aes(x = preds, y = PDT)) + geom_point(size = 2)
+    }
+
+}

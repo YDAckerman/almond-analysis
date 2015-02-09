@@ -3714,6 +3714,7 @@ ggplot(dmgNP, aes(x = Tot_Nuts, y = DmgNOW)) + geom_point(size = 2)
 ## look at damage variation within tree age
 ## just use proportions
 
+## now: examine plots
 resCount <- testRunSimplePredModel(K = 10, bins = 3, rescale = TRUE,
                                    parallel = TRUE, lhs = "DmgNOW")
 
@@ -3795,15 +3796,5 @@ ggplot(resCM, aes(x = rhs, y = meanMSE)) +
 #######################
 ## individual models
 
-AssembleData(test = "testRunSimplePredModel",
-                 K = 0,
-                 rescale = TRUE,
-                 bins = 3,
-                 seed = 10
-                 )
-
-m1 <- glm2(DmgNOW ~ F1 + F2 + F3,
-           family = "poisson",
-           data = dmgNP_sets[["CONV"]],
-           na.action = na.exclude
-           )
+drawModel()
+drawModel("EMD")
