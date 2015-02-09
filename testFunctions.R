@@ -160,57 +160,18 @@ testRunSimplePredModel <-  function(K = 5,
                                     lhs = "PDT"
                                     ){
 
-    ## For these results, we're going to subset by
-    ## non-pareil and combine all the samples from the
-    ## same ranch,block,year combinations:
-    dmgNP <- subset(dmg, Variety == "NP")
-    dmgNP <- ddply(dmgNP, .(Year, Ranch, Block, trt2), summarize,
-                   Tot_Nuts = sum(Tot_Nuts, na.rm = TRUE),
-                   DmgNOW = sum(DmgNOW, na.rm = TRUE),
-                   InfNOW = sum(InfNOW, na.rm = TRUE)
-                   )
+    AssembleData(test = "testRunSimplePredModel",
+                 K = K,
+                 rescale = rescale,
+                 bins = bins,
+                 seed = seed
+                 )
 
-    ##return(dmgNP)
-    dmgNP <- ddply(dmgNP, .(), transform,
-                   PDT = DmgNOW / Tot_Nuts,
-                   PIT = InfNOW / Tot_Nuts,
-                   PDI = DmgNOW / Tot_Nuts
-                   )
+    AssembleInsectCombs(test = "testRunSimplePredModel",
+                        bins = bins
+                        )
 
-    cv_list <- dlply(dmgNP, .(na.omit(trt2)), FoldData, k = K, .seed = seed)
-    seas_bins <- ddply(c, .(Year, Ranch, Block), BinSeason, num.bins = bins)
-
-    ## Insect variable combinations and key:
-
-    ## possible set:
-    insect_vars <- c(paste0(c("M", "E", "F"), rep(1:bins, each = 3)), NA, NA)
-
-    ## find combinations:
-    insect_combs <- t(combn(insect_vars, 3))
-
-    ## make key:
-    insect_grid <- as.data.frame(insect_combs)
-    colnames(insect_grid) <- c("V1", "V2", "V3")
-    rhs <- apply(insect_combs,
-                    1,
-                    function(x) paste(na.omit(x), collapse = "+")
-                    )
-    insect_grid$rhs <- rhs
-    insect_grid$ModelID <- 1:length(rhs)
-
-    ## do we rescale the insect variables (?):
-    if (rescale) {
-        rescaled <- llply(seas_bins[, na.omit(insect_vars)], rescaler)
-        seas_bins <- cbind(seas_bins[, 1:3], as.data.frame(rescaled))
-    }
-
-    dmgNP_sets <-  dlply(dmgNP,
-                         .(na.omit(trt2)),
-                         merge,
-                         y = seas_bins,
-                         by = c("Year", "Ranch", "Block")
-                         )
-
+    ## Assemble parameter combinations ->
     val_grid <- expand.grid(rhs,
                         as.character(na.omit(unique(dmgNP$trt2))),
                         0:K,
@@ -218,11 +179,13 @@ testRunSimplePredModel <-  function(K = 5,
                         )
 
     colnames(val_grid) <- c("rhs", "trtmnt", "fold")
+    ## <- parameter combinations assembled
 
+    ## parallel:
     if (parallel) {registerDoMC(cores = 4)}
-
     par_opts = list(.export = c("dmgNP_sets", "cv_list"))
 
+    ## run models:
     results <- mdply(val_grid,
                      RunSimplePredModel,
                      .dmg_sets = dmgNP_sets,

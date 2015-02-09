@@ -606,3 +606,76 @@ RenameTraps <- function(type){
                        )
 
 }
+
+AssembleData <- function(test = NULL, ...){
+    params <- list(...)
+    if(test == "testRunSimplePredModel"){
+        ## Assemble all the required data ->
+        dmgNP <- subset(dmg, Variety == "NP")
+        dmgNP <- ddply(dmgNP, .(Year, Ranch, Block, trt2), summarize,
+                       Tot_Nuts = sum(Tot_Nuts, na.rm = TRUE),
+                       DmgNOW = sum(DmgNOW, na.rm = TRUE),
+                       InfNOW = sum(InfNOW, na.rm = TRUE)
+                       )
+
+        dmgNP <- ddply(dmgNP, .(), transform,
+                       PDT = DmgNOW / Tot_Nuts,
+                       PIT = InfNOW / Tot_Nuts,
+                       PDI = DmgNOW / InfNOW
+                       )
+
+        cv_list <<- dlply(dmgNP,
+                          .(na.omit(trt2)),
+                          FoldData,
+                          k = params$K,
+                          .seed = params$seed
+                          )
+
+        insect_vars <- paste0(c("M", "E", "F"), rep(1:params$bins, each = 3))
+        seas_bins <- ddply(c,
+                           .(Year, Ranch, Block),
+                           BinSeason,
+                           num.bins = params$bins)
+
+        ## do we rescale the insect variables (?):
+        if (params$rescale) {
+            rescaled <- llply(seas_bins[, insect_vars], rescaler)
+            seas_bins <- cbind(seas_bins[, 1:3], as.data.frame(rescaled))
+        }
+
+        dmgNP_sets <<-  dlply(dmgNP,
+                              .(na.omit(trt2)),
+                              merge,
+                              y = seas_bins,
+                              by = c("Year", "Ranch", "Block")
+                              )
+        ## <- data assembled
+    }
+    return(NULL)
+}
+
+
+AssembleInsectCombs <- function(test = NULL, ...){
+
+    params <- list(...)
+    if(test == "testRunSimplePredModel") {
+        ## Assemble insect variable combinations and key ->
+        insect_vars <- c(paste0(c("M", "E", "F"),
+                                rep(1:params$bins, each = 3)), NA, NA)
+
+        ## find combinations:
+        insect_combs <- t(combn(insect_vars, 3))
+
+        ## make key:
+        insect_grid <<- as.data.frame(insect_combs)
+        colnames(insect_grid) <- c("V1", "V2", "V3")
+        rhs <- apply(insect_combs,
+                     1,
+                     function(x) paste(na.omit(x), collapse = "+")
+                     )
+        insect_grid$rhs <<- rhs
+        insect_grid$ModelID <<- 1:length(rhs)
+        ## <- combination and key assembled
+    }
+    return(NULL)
+}

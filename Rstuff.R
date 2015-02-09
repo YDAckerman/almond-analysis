@@ -3697,9 +3697,28 @@ ggplot(dmgSUM, aes(x = Tot_Nuts, y = InfNOW)) + geom_point(size = 3)
 ggplot(dmgNP, aes(x = Tot_Nuts, y = DmgNOW)) + geom_point(size = 2)
 
 ## 2/9/15 ##
-resCount <- testRunSimplePredModel(K = 10, bins = 3, rescale = TRUE, parallel = TRUE, lhs = "DmgNOW")
 
-resProp <- testRunSimplePredModel(K = 10, bins = 3, rescale = TRUE, parallel = TRUE, lhs = "PDT")
+## TRY:
+
+## season average for each M, F, E alone. (try regardless of autocorrelation)
+## just use proportions
+## example plots: residual ~ season-long av of (e.g. F)
+## combine multiple samples from a given block into a single sample (pool them all)
+## just look at nonpareil
+## look at damage variation within tree age
+
+## done:
+## traps renamed
+## combine multiple samples from a given block into a single sample.
+## just look at nonpareil
+## look at damage variation within tree age
+## just use proportions
+
+resCount <- testRunSimplePredModel(K = 10, bins = 3, rescale = TRUE,
+                                   parallel = TRUE, lhs = "DmgNOW")
+
+resProp <- testRunSimplePredModel(K = 10, bins = 3, rescale = TRUE,
+                                  parallel = TRUE, lhs = "PDT")
 
 resP <- subset(resProp,
                rhs %in% c("M1+M2+M3",
@@ -3731,10 +3750,60 @@ resCM <- ddply(subset(resC, fold != 0), .(rhs, trtmnt), summarize,
               )
 
 
-ggplot(subset(resP, fold == 0), aes(x = rhs, y = COR)) +geom_point(size = 2) + facet_wrap(~trtmnt, scale = "free") + theme(axis.text.x = element_text(angle = 90, hjust = 0)) ## works
+#######################
+#######################
+## no cv, summary stats
+ggplot(subset(resP, fold == 0), aes(x = rhs, y = COR)) +
+    geom_point(size = 2) +
+    facet_wrap(~trtmnt, scale = "free") +
+     theme(axis.text.x = element_text(angle = 90, hjust = 0))
 
-ggplot(resCM, aes(x = rhs, y = meanCOR)) + geom_point(size = 2) + facet_wrap(~trtmnt, scale = "free") + theme(axis.text.x = element_text(angle = 90, hjust = 0)) ## works
+ggplot(subset(resP, fold == 0), aes(x = rhs, y = VAR)) +
+    geom_point(size = 2) +
+    facet_wrap(~trtmnt, scale = "free") +
+    theme(axis.text.x = element_text(angle = 90, hjust = 0))
 
-ggplot(resCM, aes(x = rhs, y = meanVAR)) + geom_point(size = 2) + facet_wrap(~trtmnt, scale = "free") + theme(axis.text.x = element_text(angle = 90, hjust = 0)) ## works
+ggplot(subset(resC, fold == 0), aes(x = rhs, y = VAR)) +
+    geom_point(size = 2) +
+    facet_wrap(~trtmnt, scale = "free") +
+    theme(axis.text.x = element_text(angle = 90, hjust = 0))
+#######################
+#######################
 
-ggplot(resCM, aes(x = rhs, y = meanMSE)) + geom_point(size = 2) + facet_wrap(~trtmnt, scale = "free") + theme(axis.text.x = element_text(angle = 90, hjust = 0)) ## works
+
+#######################
+#######################
+## cv, summary stats
+ggplot(resCM, aes(x = rhs, y = meanCOR)) +
+    geom_point(size = 2) +
+    facet_wrap(~trtmnt, scale = "free") +
+    theme(axis.text.x = element_text(angle = 90, hjust = 0))
+
+ggplot(resCM, aes(x = rhs, y = meanVAR)) +
+    geom_point(size = 2) +
+    facet_wrap(~trtmnt, scale = "free") +
+    theme(axis.text.x = element_text(angle = 90, hjust = 0))
+
+ggplot(resCM, aes(x = rhs, y = meanMSE)) +
+    geom_point(size = 2) +
+    facet_wrap(~trtmnt, scale = "free") +
+    theme(axis.text.x = element_text(angle = 90, hjust = 0))
+#######################
+#######################
+
+#######################
+#######################
+## individual models
+
+AssembleData(test = "testRunSimplePredModel",
+                 K = 0,
+                 rescale = TRUE,
+                 bins = 3,
+                 seed = 10
+                 )
+
+m1 <- glm2(DmgNOW ~ F1 + F2 + F3,
+           family = "poisson",
+           data = dmgNP_sets[["CONV"]],
+           na.action = na.exclude
+           )
