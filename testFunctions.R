@@ -160,6 +160,7 @@ testRunSimplePredModel <-  function(K = 5,
                                     lhs = "PDT"
                                     ){
 
+    ## this gives us dmgNP, cv_list, and dmgNP_sets
     AssembleData(test = "testRunSimplePredModel",
                  K = K,
                  rescale = rescale,
@@ -167,26 +168,20 @@ testRunSimplePredModel <-  function(K = 5,
                  seed = seed
                  )
 
-    AssembleInsectCombs(test = "testRunSimplePredModel",
-                        bins = bins
+    ## this give us insect_grid and val_grid
+    AssembleParameterCombs(test = "testRunSimplePredModel",
+                        bins = bins,
+                        K = K
                         )
-
-    ## Assemble parameter combinations ->
-    val_grid <- expand.grid(rhs,
-                        as.character(na.omit(unique(dmgNP$trt2))),
-                        0:K,
-                        stringsAsFactors = FALSE
-                        )
-
-    colnames(val_grid) <- c("rhs", "trtmnt", "fold")
-    ## <- parameter combinations assembled
 
     ## parallel:
     if (parallel) {registerDoMC(cores = 4)}
+
+    ## todo: make par_opts work
     par_opts = list(.export = c("dmgNP_sets", "cv_list"))
 
     ## run models:
-    results <- mdply(val_grid,
+    results <- mdply(val_grid[1, ],
                      RunSimplePredModel,
                      .dmg_sets = dmgNP_sets,
                      .cv_list = cv_list,

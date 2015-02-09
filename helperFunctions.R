@@ -618,11 +618,11 @@ AssembleData <- function(test = NULL, ...){
                        InfNOW = sum(InfNOW, na.rm = TRUE)
                        )
 
-        dmgNP <- ddply(dmgNP, .(), transform,
-                       PDT = DmgNOW / Tot_Nuts,
-                       PIT = InfNOW / Tot_Nuts,
-                       PDI = DmgNOW / InfNOW
-                       )
+        dmgNP <- dmgNP <<- ddply(dmgNP, .(), transform,
+                                 PDT = DmgNOW / Tot_Nuts,
+                                 PIT = InfNOW / Tot_Nuts,
+                                 PDI = DmgNOW / InfNOW
+                                 )
 
         cv_list <<- dlply(dmgNP,
                           .(na.omit(trt2)),
@@ -655,10 +655,11 @@ AssembleData <- function(test = NULL, ...){
 }
 
 
-AssembleInsectCombs <- function(test = NULL, ...){
+AssembleParameterCombs <- function(test = NULL, ...){
 
     params <- list(...)
     if(test == "testRunSimplePredModel") {
+
         ## Assemble insect variable combinations and key ->
         insect_vars <- c(paste0(c("M", "E", "F"),
                                 rep(1:params$bins, each = 3)), NA, NA)
@@ -668,7 +669,7 @@ AssembleInsectCombs <- function(test = NULL, ...){
 
         ## make key:
         insect_grid <<- as.data.frame(insect_combs)
-        colnames(insect_grid) <- c("V1", "V2", "V3")
+        colnames(insect_grid) <<- c("V1", "V2", "V3")
         rhs <- apply(insect_combs,
                      1,
                      function(x) paste(na.omit(x), collapse = "+")
@@ -676,6 +677,17 @@ AssembleInsectCombs <- function(test = NULL, ...){
         insect_grid$rhs <<- rhs
         insect_grid$ModelID <<- 1:length(rhs)
         ## <- combination and key assembled
+
+        ## Assemble parameter combinations ->
+        val_grid <<- expand.grid(rhs,
+                            as.character(na.omit(unique(dmgNP$trt2))),
+                            0:params$K,
+                            stringsAsFactors = FALSE
+                            )
+
+        colnames(val_grid) <<- c("rhs", "trtmnt", "fold")
+        ## <- parameter combinations assembled
+
     }
     return(NULL)
 }
