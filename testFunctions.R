@@ -29,37 +29,20 @@ testRunParametricCV <- function(K = 5,
     ## @Param formula: character, base model to use in regressions. e.g.
     ##                            "cbind(n, N - n) ~ x1 + x2:x1"
 
-    cv_list <- dlply(dmg,
-                     .(eval(parse(text = splitVar))),
-                     FoldData,
-                     k = K,
-                     seed = 10
-                     )
 
-    seas_bins <- ddply(c, .(Year, Ranch, Block), BinSeason, num.bins = bins)
-
-    if(splitVar != "trt2") {stop("feature not yet functional")}
-    ##TODO: make this work.
-
-    splitVar_sets <-  dlply(dmg,
-                       .(eval(parse(text = splitVar))),
-                       merge,
-                       y = seas_bins,
-                       by = c("Year", "Ranch", "Block")
-                       )
-
-    val_grid <- list(c("M", "F", "E"),
-                     as.character(na.omit(unique(dmg[, splitVar]))),
-                     0:bins,
-                     1:K
-                     )
-
-    val_grid <- expand.grid(val_grid, stringsAsFactors = FALSE)
-    colnames(val_grid) <- c("type", "trtmnt", "bin", "fold")
+    ## gives us splitVar_sets, cv_list, & val_grid
+    AssembleData(test = "testRunParametricCV",
+                 K = K,
+                 bins = bins,
+                 splitVar = splitVar
+                 )
 
     if (parallel) {registerDoMC(cores = 4)}
 
-    par_opts = list(.export = c("trt_sets", "cv_list"), .packages = c("lme4"))
+    par_opts <- list(
+        .export = c("splitVar_sets", "cv_list"),
+        .packages = c("lme4")
+        )
 
     results <- mdply(val_grid,
                      RunParametricCV,
@@ -82,6 +65,9 @@ testRunParameticCVagainstResiduals <- function(K = 5,
                                                response = "D",
                                                seed = 10
                                            ) {
+
+    ## @Function testRunParamentricCVagainstResiduals
+    ## TODO: write function summary
 
     cv_list <- dlply(dmg, .(na.omit(trt2)), FoldData, k = K, .seed = seed)
     seas_bins <- ddply(c, .(Year, Ranch, Block), BinSeason, num.bins = bins)
@@ -135,7 +121,7 @@ testRunParameticCVagainstResiduals <- function(K = 5,
 
     if (parallel) {registerDoMC(cores = 4)}
 
-    par_opts = list(.export = c("dmg_sets", "cv_list", "res_sets"))
+    par_opts <- list(.export = c("dmg_sets", "cv_list", "res_sets"))
 
     results <- mdply(val_grid,
                      RunParametricCVagainstResiduals,
@@ -159,6 +145,8 @@ testRunSimplePredModel <-  function(K = 5,
                                     parallel = FALSE,
                                     lhs = "PDT"
                                     ){
+    ## @Function testRunSimplePredModel
+    ## TODO: write function summary
 
     ## this gives us dmgNP, cv_list, and dmgNP_sets
     AssembleData(test = "testRunSimplePredModel",
@@ -177,8 +165,8 @@ testRunSimplePredModel <-  function(K = 5,
     ## parallel:
     if (parallel) {registerDoMC(cores = 4)}
 
-    ## todo: make par_opts work
-    par_opts = list(.export = c("dmgNP_sets", "cv_list"))
+    ## TODO: make par_opts work
+    par_opts <- list(.export = c("dmgNP_sets", "cv_list"))
 
     ## run models:
     results <- mdply(val_grid,
