@@ -335,3 +335,65 @@ RunSimplePredModel <- function(rhs,
     data.frame('COR' = COR, 'MSE' = MSE, 'VAR' = VAR)
 
 }
+
+DrawModel <- function(trtmnt = "CONV",
+                      v1 = "F1", v2 = "F2", v3 = "F3",
+                      individual = FALSE,
+                      residuals = FALSE
+                      ){
+
+    ## @Function DrawModel
+    ## TODO: write function summary
+
+    AssembleData(test = "testRunSimplePredModel",
+                 K = 0,
+                 rescale = FALSE,
+                 bins = 3,
+                 seed = 10
+             )
+
+    set <- dmgNP_sets[[trtmnt]]
+
+    if (individual) {
+        forPlot <- melt(set,
+                        id = setdiff(colnames(set),
+                            na.omit(c(v1, v2, v3)))
+                        )
+        ggplot(forPlot, aes( x = value, y = PDT)) +
+            geom_point(size = 2) +
+                facet_wrap(~variable, scale = "free") +
+                    labs(title = paste(
+                             trtmnt,
+                             " with model ",
+                             paste(na.omit(c(v1, v2, v3)), collapse = "+")))
+    } else {
+        vars <- paste(na.omit(c(v1, v2, v3)), collapse = "+")
+        f <- as.formula(paste(c("PDT", vars), collapse = "~"))
+        m <- glm2(f,
+                  family = "poisson",
+                  data = set,
+                  na.action = na.exclude
+                  )
+
+        set$Predictions <- predict(m, type = "response")
+
+        if (residuals) {
+            set$Residuals <- residuals(m)
+            ggplot(set, aes(y = Residuals, x = 1:length(Residuals))) +
+                geom_point(aes(size = Tot_Nuts)) +
+                    labs(title = paste(
+                             trtmnt,
+                             " with model ",
+                             paste(na.omit(c(v1, v2, v3)), collapse = "+")))
+
+        } else {
+            ggplot(set, aes(x = Predictions, y = PDT)) +
+                geom_point(size = 2) +
+                    labs(title = paste(
+                             trtmnt,
+                             " with model ",
+                             paste(na.omit(c(v1, v2, v3)), collapse = "+")))
+        }
+    }
+
+}

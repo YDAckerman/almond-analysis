@@ -714,7 +714,11 @@ DrawModel <- function(trtmnt = "CONV",
                         )
         ggplot(forPlot, aes( x = value, y = PDT)) +
             geom_point(size = 2) +
-                facet_wrap(~variable, scale = "free")
+                facet_wrap(~variable, scale = "free") +
+                    labs(title = paste(
+                             trtmnt,
+                             " with model ",
+                             paste(na.omit(c(v1, v2, v3)), collapse = "+")))
     } else {
         vars <- paste(na.omit(c(v1, v2, v3)), collapse = "+")
         f <- as.formula(paste(c("PDT", vars), collapse = "~"))
@@ -726,10 +730,20 @@ DrawModel <- function(trtmnt = "CONV",
         set$preds <- predict(m, type = "response")
         if (residuals) {
             set$res <- residuals(m)
-            ggplot(set, aes(y = res,
-                  x = 1:length(res))) + geom_point(aes(size = Tot_Nuts))
+            ggplot(set, aes(y = res, x = 1:length(res))) +
+                geom_point(aes(size = Tot_Nuts)) +
+                    labs(title = paste(
+                             trtmnt,
+                             " with model ",
+                             paste(na.omit(c(v1, v2, v3)), collapse = "+")))
+
         } else {
-            ggplot(set, aes(x = preds, y = PDT)) + geom_point(size = 2)
+            ggplot(set, aes(x = preds, y = PDT)) +
+                geom_point(size = 2) +
+                    labs(title = paste(
+                             trtmnt,
+                             " with model ",
+                             paste(na.omit(c(v1, v2, v3)), collapse = "+")))
         }
     }
 

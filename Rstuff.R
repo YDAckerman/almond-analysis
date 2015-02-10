@@ -3713,8 +3713,9 @@ ggplot(dmgNP, aes(x = Tot_Nuts, y = DmgNOW)) + geom_point(size = 2)
 ## just look at nonpareil
 ## look at damage variation within tree age
 ## just use proportions
+## examine plots
+## season average for each M F E alone.
 
-## now: examine plots
 resCount <- testRunSimplePredModel(K = 10, bins = 3, rescale = TRUE,
                                    parallel = TRUE, lhs = "DmgNOW")
 
@@ -3789,6 +3790,23 @@ ggplot(resCM, aes(x = rhs, y = meanMSE)) +
     geom_point(size = 2) +
     facet_wrap(~trtmnt, scale = "free") +
     theme(axis.text.x = element_text(angle = 90, hjust = 0))
+
+ggplot(resPM, aes(x = rhs, y = meanCOR)) +
+    geom_point(size = 2) +
+    facet_wrap(~trtmnt, scale = "free") +
+    theme(axis.text.x = element_text(angle = 90, hjust = 0))
+
+ggplot(resPM, aes(x = rhs, y = meanVAR)) +
+    geom_point(size = 2) +
+    facet_wrap(~trtmnt, scale = "free") +
+    theme(axis.text.x = element_text(angle = 90, hjust = 0))
+
+ggplot(resPM, aes(x = rhs, y = meanMSE)) +
+    geom_point(size = 2) +
+    facet_wrap(~trtmnt, scale = "free") +
+    theme(axis.text.x = element_text(angle = 90, hjust = 0))
+
+
 #######################
 #######################
 
@@ -3796,5 +3814,9 @@ ggplot(resCM, aes(x = rhs, y = meanMSE)) +
 #######################
 ## individual models
 
-drawModel()
-drawModel("EMD")
+
+DrawModel("CONV", residuals = TRUE)
+DrawModel("ECMD", residuals = TRUE)
+DrawModel("EMD", v1 = "E1", v2 = "E2", v3 = "E3", residuals = TRUE)
+DrawModel("LCMD", residuals = TRUE)
+DrawModel("LMD", v1 = "E1", v2 = "E2", v3 = "E3", residuals = TRUE)
