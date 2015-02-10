@@ -692,9 +692,10 @@ AssembleParameterCombs <- function(test = NULL, ...){
     return(NULL)
 }
 
-drawModel <- function(trtmnt = "CONV",
+DrawModel <- function(trtmnt = "CONV",
                       v1 = "F1", v2 = "F2", v3 = "F3",
-                      individual = FALSE
+                      individual = FALSE,
+                      residuals = FALSE
                       ){
 
     AssembleData(test = "testRunSimplePredModel",
@@ -723,7 +724,13 @@ drawModel <- function(trtmnt = "CONV",
                   na.action = na.exclude
                   )
         set$preds <- predict(m, type = "response")
-        ggplot(set, aes(x = preds, y = PDT)) + geom_point(size = 2)
+        if (residuals) {
+            set$res <- residuals(m)
+            ggplot(set, aes(y = res,
+                  x = 1:length(res))) + geom_point(aes(size = Tot_Nuts))
+        } else {
+            ggplot(set, aes(x = preds, y = PDT)) + geom_point(size = 2)
+        }
     }
 
 }

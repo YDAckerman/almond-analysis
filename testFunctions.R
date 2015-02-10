@@ -181,7 +181,7 @@ testRunSimplePredModel <-  function(K = 5,
     par_opts = list(.export = c("dmgNP_sets", "cv_list"))
 
     ## run models:
-    results <- mdply(val_grid[1, ],
+    results <- mdply(val_grid,
                      RunSimplePredModel,
                      .dmg_sets = dmgNP_sets,
                      .cv_list = cv_list,
