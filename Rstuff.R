@@ -3303,7 +3303,7 @@ results <- mdply(val.grid, failwith(NA, RunTrialWithOpts2), .progress = "text")
 
 ## 1/20/15 ##
 
-## just input gps data. Merging:
+## just inputted gps data. Merging:
 
 gpsTest <- merge(c,gps, by("Ranch", "TrapSite"))
 
@@ -3815,8 +3815,48 @@ ggplot(resPM, aes(x = rhs, y = meanMSE)) +
 ## individual models
 
 
+
+
 DrawModel("CONV", residuals = TRUE)
 DrawModel("ECMD", residuals = TRUE)
 DrawModel("EMD", v1 = "E1", v2 = "E2", v3 = "E3", residuals = TRUE)
 DrawModel("LCMD", residuals = TRUE)
 DrawModel("LMD", v1 = "E1", v2 = "E2", v3 = "E3", residuals = TRUE)
+
+
+## 2/11/15 ##
+
+##################################
+## just caught an error in the db:
+load("pred_analysis2_6_15.rda")
+temp <- subset(c, !is.na(Males) & TrapType == "female-almondMeal")
+dim(temp)
+## [1] 3405   28        # not right.
+
+## so:
+er_i <- with(c, which(!is.na(Males) & TrapType == "female-almondMeal"))
+c$Males[er_i] <- NA
+er_i <- with(c, which(!is.na(Eggs) & TrapType == "male-virginFemale"))
+c$Eggs[er_i] <- NA
+
+## focus on nice plots:
+c_conv <- subset(c,Trtmnt %in% c("Conv","Control"))
+temp1 <- merge( p.n.by.block, c_conv, by = c("Ranch", "Block", "Year"))
+
+pal <- wes_palette("Darjeeling", 6, type = "continuous")
+
+efplot <- ggplot(temp1, aes(x = DayOfYear.y, y = Males, group = Site.y)) +
+    scale_color_manual(values = pal) +
+    geom_point(size=2) +
+    geom_vline(aes(xintercept = DayOfYear.x,
+                   colour = Product..Agrian.,
+                   linetype = "longdash")) +
+    facet_wrap(~Site.y)
+    
+
+----
+----
+**Almond Industry IPM + Ecoinformatics**
+
+If at any point you would like to see some of the data in more detail
+let me know and I'll try to quickly make a plot for you

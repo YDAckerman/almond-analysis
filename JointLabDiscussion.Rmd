@@ -1,19 +1,21 @@
-**Almond Industry IPM + Ecoinformatics**
---------------------------------------------------------------------------------
+---
+output:
+  ioslides_presentation:
+    widescreen: true
+    smaller: false
+---
 
-************
-If at any point you would like to see some of the data in more detail
-let me know and I'll try to quickly make a plot for you
+
+# Almond Industry IPM + Ecoinformatics {.flexbox .vcenter}
 
 
-************
+# What Datasets have we got? {.flexbox .vcenter}
 
-## The Datasets:
 
-### **dmg** - nut damage.
+## dmg
 
 ```{r, echo = FALSE}
-load("pred_analysis2_6_15.rda")
+load("../pred_analysis2_11_15.rda")
 ```
 **dmg** has dimensions:
 ```{r, echo = FALSE}
@@ -25,7 +27,7 @@ colnames(dmg[, c(1:12, 16, 64, 72)])
 ```
 
 
-### **p.n** - pesticide and mating distruption use.
+## p.n
 
 **p.n** has dimensions:
 
@@ -36,18 +38,15 @@ with data on:
 ```{r, echo = FALSE}
 colnames(p.n)
 ```
-*NOTE*:
-```{r}
-summary(as.factor(as.character(p.n$Target.Pest)))
-```
 
-We are only interested (at the moment) in Navel Orangeworms. **p.n** is acutally
-only a small subset of a MUCH larger dataset **p** which contains pesticide use
-data targeting far more species. 
+## Navel Orangeworms
+For the moment we are only interested in Navel Orangeworms. **p.n** is acutally
+only a small subset of a MUCH larger dataset **p** which contains data on pesticide
+targeting far more species. 
 
-### **c** - insect densities.
 
-This is really the honey pot of our analysis.
+## **c** | insect densities.
+
 **c** has dimension:
 ```{r, echo = FALSE}
 dim(c)
@@ -57,12 +56,65 @@ with data on:
 colnames(c)
 ```
 
-## Question \#1: Can we assess pesticide efficacy?
+# Let's take a look at general patterns in seasonal NOW density:
 
-```{r, warning = FALSE}
+----
+
+```{r, warning = FALSE, echo = FALSE, fig.width = 11, fig.height = 6}
 library(ggplot2)
 library(wesanderson)
-ggplot(c, aes(x = DayOfYear, y = Females, colour = TrapType)) +
-geom_point(size = 2) + facet_wrap(~Ranch) +
-scale_color_manual(values = wes_palette("Darjeeling"))
+temp <- c
+temp$TrapType <- as.character(temp$TrapType)
+ggplot(subset(temp, !is.na(Males)),
+		    aes(x = DayOfYear, y = Males, colour = TrapType)) +
+		    geom_point(size = 2) + 	  
+		    scale_color_manual(values = wes_palette("Darjeeling"))
+```
+
+----
+
+```{r, warning = FALSE, echo = FALSE, fig.width = 11, fig.height = 6}
+library(ggplot2)
+library(wesanderson)
+temp <- c
+temp$TrapType <- as.character(temp$TrapType)
+ggplot(subset(temp, !is.na(Females)),
+		    aes(x = DayOfYear, y = Females, colour = TrapType)) +
+		    geom_point(size = 2) + 	  
+		    scale_color_manual(values = wes_palette("Darjeeling"))
+```
+
+----
+
+```{r, warning = FALSE, echo = FALSE, fig.width = 11, fig.height = 6}
+library(ggplot2)
+library(wesanderson)
+temp <- c
+temp$TrapType <- as.character(temp$TrapType)
+ggplot(subset(temp, !is.na(Eggs)),
+		    aes(x = DayOfYear, y = Eggs, colour = TrapType)) +
+		    geom_point(size = 2) + 	  
+		    scale_color_manual(values = wes_palette("Darjeeling"))
+```
+
+
+# First Question: can we assess pesticide efficacy? 
+
+
+
+----
+
+```{r, warning = FALSE, echo = FALSE, fig.width = 10, fig.height = 7}
+c_conv <- subset(c,Trtmnt %in% c("Conv","Control"))
+temp1 <- merge( p.n.by.block, c_conv, by = c("Ranch", "Block", "Year"))
+
+pal <- wes_palette("Darjeeling", 6, type = "continuous")
+
+ggplot(temp1, aes(x = DayOfYear.y, y = Males, group = Site.y)) +
+    scale_color_manual(values = pal) +
+    geom_point(size=2) +
+    geom_vline(aes(xintercept = DayOfYear.x,
+                   colour = Product..Agrian.,
+                   linetype = "longdash")) +
+    facet_wrap(~Site.y)
 ```

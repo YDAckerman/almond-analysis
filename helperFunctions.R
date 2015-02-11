@@ -651,6 +651,42 @@ AssembleData <- function(test = NULL, ...){
                               )
         ## <- data assembled
     }
+
+    if( test == "testRunParametricCV"){
+
+        cv_list <<- dlply(dmg,
+                         .(eval(parse(text = params$splitVar))),
+                         FoldData,
+                         k = params$K,
+                         seed = params$seed
+                         )
+
+        seas_bins <- ddply(c,
+                           .(Year, Ranch, Block),
+                           BinSeason,
+                           num.bins = params$bins
+                           )
+
+        if(params$splitVar != "trt2") {stop("feature not yet functional")}
+        ##TODO: make this work.
+
+        splitVar_sets <<-  dlply(dmg,
+                                .(eval(parse(text = params$splitVar))),
+                                merge,
+                                y = seas_bins,
+                                by = c("Year", "Ranch", "Block")
+                                )
+
+        val_grid <- list(c("M", "F", "E"),
+                         as.character(na.omit(unique(dmg[, params$splitVar]))),
+                         0:params$bins,
+                         1:params$K
+                         )
+
+        val_grid <<- expand.grid(val_grid, stringsAsFactors = FALSE)
+        colnames(val_grid) <<- c("type", "trtmnt", "bin", "fold")
+
+    }
     return(NULL)
 }
 
@@ -692,59 +728,4 @@ AssembleParameterCombs <- function(test = NULL, ...){
     return(NULL)
 }
 
-DrawModel <- function(trtmnt = "CONV",
-                      v1 = "F1", v2 = "F2", v3 = "F3",
-                      individual = FALSE,
-                      residuals = FALSE
-                      ){
 
-    AssembleData(test = "testRunSimplePredModel",
-                 K = 0,
-                 rescale = FALSE,
-                 bins = 3,
-                 seed = 10
-             )
-
-    set <- dmgNP_sets[[trtmnt]]
-
-    if (individual) {
-        forPlot <- melt(set,
-                        id = setdiff(colnames(set),
-                            na.omit(c(v1, v2, v3)))
-                        )
-        ggplot(forPlot, aes( x = value, y = PDT)) +
-            geom_point(size = 2) +
-                facet_wrap(~variable, scale = "free") +
-                    labs(title = paste(
-                             trtmnt,
-                             " with model ",
-                             paste(na.omit(c(v1, v2, v3)), collapse = "+")))
-    } else {
-        vars <- paste(na.omit(c(v1, v2, v3)), collapse = "+")
-        f <- as.formula(paste(c("PDT", vars), collapse = "~"))
-        m <- glm2(f,
-                  family = "poisson",
-                  data = set,
-                  na.action = na.exclude
-                  )
-        set$preds <- predict(m, type = "response")
-        if (residuals) {
-            set$res <- residuals(m)
-            ggplot(set, aes(y = res, x = 1:length(res))) +
-                geom_point(aes(size = Tot_Nuts)) +
-                    labs(title = paste(
-                             trtmnt,
-                             " with model ",
-                             paste(na.omit(c(v1, v2, v3)), collapse = "+")))
-
-        } else {
-            ggplot(set, aes(x = preds, y = PDT)) +
-                geom_point(size = 2) +
-                    labs(title = paste(
-                             trtmnt,
-                             " with model ",
-                             paste(na.omit(c(v1, v2, v3)), collapse = "+")))
-        }
-    }
-
-}

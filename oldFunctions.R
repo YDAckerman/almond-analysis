@@ -201,7 +201,7 @@ eval.efficacy <- function(df = p.n.p, type="m", route = "mean", bin = 7){
         stop("Please choose a valid type")
     }
 
-    temp = df
+    temp < df
     temp$MeanPopBeforeSpray <- NA
     temp$Proportion <- NA
     temp$Edges <-  NA
@@ -209,7 +209,7 @@ eval.efficacy <- function(df = p.n.p, type="m", route = "mean", bin = 7){
     temp$Treatment <- NA
     temp$TotalPriorSprays <- NA
     
-    ef.dat = do.call(rbind, lapply(1:dim(temp)[1],function(i){
+    ef.dat <- do.call(rbind, lapply(1:dim(temp)[1],function(i){
 
         site <- temp$Site[i]
         blocks <- temp$Block.s.[i]
@@ -217,7 +217,7 @@ eval.efficacy <- function(df = p.n.p, type="m", route = "mean", bin = 7){
         
         ## gather up the relevant blocks:
 
-        blocks = get.blocks(blocks,site)
+        blocks <- get.blocks(blocks,site)
 
         ## yes, we need this because of block overlap:
         ranch <- temp$Ranch[i]
@@ -231,9 +231,9 @@ eval.efficacy <- function(df = p.n.p, type="m", route = "mean", bin = 7){
 
             ## first let's check if a puffer was turned on within
             ## the time-bin of the spray:
-            puf.dates = puffer.dates.for.block(site, block, year)
+            puf.dates <- puffer.dates.for.block(site, block, year)
 
-            test = length(which(abs(date.jd - puf.dates) <= (14+bin)))
+            test <- length(which(abs(date.jd - puf.dates) <= (14+bin)))
 
             if(test != 0){
                 ##print("block skipped due to puffer prox")
@@ -243,7 +243,7 @@ eval.efficacy <- function(df = p.n.p, type="m", route = "mean", bin = 7){
             }
 
             ## Get the trap sites for the block:
-            trapsites = get.trapsites(block,site)
+            trapsites <- get.trapsites(block,site)
             
             ## Now,
             ## Select the range of insect-sample dates based on
@@ -259,20 +259,20 @@ eval.efficacy <- function(df = p.n.p, type="m", route = "mean", bin = 7){
                                                   bin, type)
                 
             ## Select the actual catches:
-            pop_before = get.count(type, i_before)
-            pop_after = get.count(type, i_after)
+            pop_before <- get.count(type, i_before)
+            pop_after <- get.count(type, i_after)
             
             ## if we allow na's to hang around then we can't take
             ## a mean
-            pop_before = subset(pop_before, !is.na(pop_before))
-            pop_after = subset(pop_after, !is.na(pop_after))
+            pop_before <- subset(pop_before, !is.na(pop_before))
+            pop_after <- subset(pop_after, !is.na(pop_after))
             
             ## if at this point there's no data, regur some na's:
             if( length(pop_after) == 0 | length(pop_before) == 0 ){
 
                 ##print("row skipped due to lack of data")
-                row = temp[i,]
-                row$Block.s. = block
+                row <- temp[i,]
+                row$Block.s. <- block
                 return(row)
             } else {
             
