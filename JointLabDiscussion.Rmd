@@ -1,0 +1,68 @@
+**Almond Industry IPM + Ecoinformatics**
+--------------------------------------------------------------------------------
+
+************
+If at any point you would like to see some of the data in more detail
+let me know and I'll try to quickly make a plot for you
+
+
+************
+
+## The Datasets:
+
+### **dmg** - nut damage.
+
+```{r, echo = FALSE}
+load("pred_analysis2_6_15.rda")
+```
+**dmg** has dimensions:
+```{r, echo = FALSE}
+dim(dmg)
+```
+But I am mainly interested in columns:
+```{r, echo = FALSE}
+colnames(dmg[, c(1:12, 16, 64, 72)])
+```
+
+
+### **p.n** - pesticide and mating distruption use.
+
+**p.n** has dimensions:
+
+```{r, echo = FALSE}
+dim(p.n)
+```
+with data on:
+```{r, echo = FALSE}
+colnames(p.n)
+```
+*NOTE*:
+```{r}
+summary(as.factor(as.character(p.n$Target.Pest)))
+```
+
+We are only interested (at the moment) in Navel Orangeworms. **p.n** is acutally
+only a small subset of a MUCH larger dataset **p** which contains pesticide use
+data targeting far more species. 
+
+### **c** - insect densities.
+
+This is really the honey pot of our analysis.
+**c** has dimension:
+```{r, echo = FALSE}
+dim(c)
+```
+with data on:
+```{r, echo = FALSE}
+colnames(c)
+```
+
+## Question \#1: Can we assess pesticide efficacy?
+
+```{r, warning = FALSE}
+library(ggplot2)
+library(wesanderson)
+ggplot(c, aes(x = DayOfYear, y = Females, colour = TrapType)) +
+geom_point(size = 2) + facet_wrap(~Ranch) +
+scale_color_manual(values = wes_palette("Darjeeling"))
+```
