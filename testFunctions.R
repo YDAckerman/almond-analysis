@@ -14,6 +14,11 @@ testRunParametricCV <- function(K = 5,
                                 ) {
 
     ## @Function testRunParamentricCV
+    ##           builds a grid of parameters, each line of which
+    ##           uniquely defines a model and a cross validation
+    ##           fold to assess predictive accuracy. A data frame
+    ##           containing a variety of metrics for model assessment
+    ##           and comparsion is returned.
     ## @Param K: int, sets number of folds for CV
     ## @Param bins: int, sets number of bins to split season into before
     ##                   averaging
