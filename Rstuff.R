@@ -3840,6 +3840,8 @@ er_i <- with(c, which(!is.na(Eggs) & TrapType == "male-virginFemale"))
 c$Eggs[er_i] <- NA
 
 ## focus on nice plots:
+
+### Can we assess pesticide efficacy?
 c_conv <- subset(c,Trtmnt %in% c("Conv","Control"))
 temp1 <- merge( p.n.by.block, c_conv, by = c("Ranch", "Block", "Year"))
 
@@ -3853,10 +3855,28 @@ efplot <- ggplot(temp1, aes(x = DayOfYear.y, y = Males, group = Site.y)) +
                    linetype = "longdash")) +
     facet_wrap(~Site.y)
     
+### Look at pesticide md use:
+smry <- ddply(p.n, .(Product..Agrian.), summarize, TotalApplications = length(unique(Site)))
+smry$Product..Agrian. <- as.character(smry$Product..Agrian.)
+smry <- smry[order(smry$TotalApplications), ]
+smry$Product..Agrian. <- factor(smry$Product..Agrian., levels = smry$Product..Agrian.)
+ggplot(smry,aes(x = Product..Agrian., y = TotalApplications)) + geom_bar(stat = "identity") + theme(axis.text.x = element_text(angle = 90, hjust = 0)) ## works
 
-----
-----
-**Almond Industry IPM + Ecoinformatics**
 
-If at any point you would like to see some of the data in more detail
-let me know and I'll try to quickly make a plot for you
+###
+## effects of MD:
+ggplot(subset(c, Trtmnt %ni% c("Conv","Control")), aes(x = JD, y = Males)) + geom_point(size = 2)  + facet_wrap(~Site)
+
+ggplot(subset(c, Trtmnt %in% c("Conv","Control")), aes(x = JD, y = Males)) + geom_point(size = 2) + facet_wrap(~Site)
+
+### Lets look at early md
+c_md <- subset(c,Trtmnt %in% c("EMD", "100%MD", "1MD", "2MD"))
+pal <- wes_palette("Zissou")
+temp1 <- merge( p.n.by.block, c_md, by = c("Ranch", "Block", "Year"))
+ggplot(temp1, aes(x = DayOfYear.y, y = Males, group = Site.y)) +
+    scale_color_manual(values = pal) +
+    geom_point(size=2) +
+    geom_vline(aes(xintercept = DayOfYear.x,
+                   colour = Product..Agrian.,
+                   linetype = "longdash")) +
+    facet_wrap(~Site.y)

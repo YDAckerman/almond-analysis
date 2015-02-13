@@ -1,6 +1,6 @@
 ## source functions & packages
-source("../almond/R/helperFunctions.R")
-source("../almond/R/libs.R")
+source("~/Documents/RosenheimLab/almond/R/helperFunctions.R")
+source("~/Documents/RosenheimLab/almond/R/libs.R")
 
 ## previously RunTrialWithOpts2
 RunParametricCV <- function(type,

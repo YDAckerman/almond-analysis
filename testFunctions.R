@@ -2,7 +2,7 @@
 ## and conditions I use with my main 'wrapper' functions.
 
 ## wrapper functions
-source("../almond/R/wrapperFunctions.R")
+source("~/Documents/RosenheimLab/almond/R/wrapperFunctions.R")
 
 
 testRunParametricCV <- function(K = 5,

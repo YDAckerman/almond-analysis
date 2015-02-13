@@ -8,61 +8,88 @@ output:
 
 # Almond Industry IPM + Ecoinformatics {.flexbox .vcenter}
 
+# What issue are we trying to address?
 
-# What Datasets have we got? {.flexbox .vcenter}
+## Navel Orangeworms
+
+<div class = "centered">
+![petersontrapco.com](instarLarvae.jpg) 
+</div>
+
+## Navel Orangeworms
 
 
-## dmg
+What's the issue?
 
+- NOW larvae create a particularly suitable environment for _Aspergillus_ _flavus_
+- _A._ _flavus_ create aflatoxin. 
+- As the peanut industry recently discovered, this is not good.
+- Almond growers are trying new IPM methods to control NOW presence.
+- Can we help them?
+
+
+# What Data do we have?
+
+# dmg
+__Nut__ __Damage__ __Data__
+
+***
 ```{r, echo = FALSE}
 load("../pred_analysis2_11_15.rda")
+source("testFunctions.R")
+library(wesanderson)
 ```
-**dmg** has dimensions:
+
+This is a subset of the data we have:
 ```{r, echo = FALSE}
-dim(dmg)
-```
-But I am mainly interested in columns:
-```{r, echo = FALSE}
-colnames(dmg[, c(1:12, 16, 64, 72)])
+colnames(dmg[, c(1:40)])
 ```
 
 
-## p.n
+# p.n
+__IPM__ __Data__
 
-**p.n** has dimensions:
-
-```{r, echo = FALSE}
-dim(p.n)
-```
-with data on:
-```{r, echo = FALSE}
+***
+we have data on:
+```{r, echo = FALSE, fig.width = 10}
 colnames(p.n)
 ```
 
-## Navel Orangeworms
-For the moment we are only interested in Navel Orangeworms. **p.n** is acutally
-only a small subset of a MUCH larger dataset **p** which contains data on pesticide
-targeting far more species. 
+## IPM Data
+__In__ __a__ __nutshell:__
+```{r, echo = FALSE, fig.width = 10, fig.height = 4}
 
-
-## **c** | insect densities.
-
-**c** has dimension:
-```{r, echo = FALSE}
-dim(c)
+smry <- ddply(p.n, .(Product..Agrian.), summarize, TotalApplications = length(unique(Site)))
+smry$Product..Agrian. <- as.character(smry$Product..Agrian.)
+smry <- smry[order(smry$TotalApplications), ]
+smry$Product..Agrian. <- factor(smry$Product..Agrian., levels = smry$Product..Agrian.)
+ggplot(subset(smry, TotalApplications >= 5),aes(x = Product..Agrian., y = TotalApplications)) +
+geom_bar(stat = "identity") + theme(axis.text.x = element_text(angle = 90, hjust = 0))
 ```
-with data on:
+
+## IPM Data
+
+
+__Things__ __to__ __consider:__
+
+- Pesticide use
+- Mating Disruption
+
+
+# c
+Insect Density Data 
+
+***
+we have data on:
 ```{r, echo = FALSE}
 colnames(c)
 ```
 
-# Let's take a look at general patterns in seasonal NOW density:
+# Let's take a look at general patterns in seasonal NOW density
 
-----
+***
 
 ```{r, warning = FALSE, echo = FALSE, fig.width = 11, fig.height = 6}
-library(ggplot2)
-library(wesanderson)
 temp <- c
 temp$TrapType <- as.character(temp$TrapType)
 ggplot(subset(temp, !is.na(Males)),
@@ -71,11 +98,9 @@ ggplot(subset(temp, !is.na(Males)),
 		    scale_color_manual(values = wes_palette("Darjeeling"))
 ```
 
-----
+***
 
 ```{r, warning = FALSE, echo = FALSE, fig.width = 11, fig.height = 6}
-library(ggplot2)
-library(wesanderson)
 temp <- c
 temp$TrapType <- as.character(temp$TrapType)
 ggplot(subset(temp, !is.na(Females)),
@@ -84,11 +109,9 @@ ggplot(subset(temp, !is.na(Females)),
 		    scale_color_manual(values = wes_palette("Darjeeling"))
 ```
 
-----
+***
 
 ```{r, warning = FALSE, echo = FALSE, fig.width = 11, fig.height = 6}
-library(ggplot2)
-library(wesanderson)
 temp <- c
 temp$TrapType <- as.character(temp$TrapType)
 ggplot(subset(temp, !is.na(Eggs)),
@@ -98,13 +121,9 @@ ggplot(subset(temp, !is.na(Eggs)),
 ```
 
 
-# First Question: can we assess pesticide efficacy? 
+## Let's look at pesticide use
 
-
-
-----
-
-```{r, warning = FALSE, echo = FALSE, fig.width = 10, fig.height = 7}
+```{r, warning = FALSE, echo = FALSE, fig.width = 10, fig.height = 5}
 c_conv <- subset(c,Trtmnt %in% c("Conv","Control"))
 temp1 <- merge( p.n.by.block, c_conv, by = c("Ranch", "Block", "Year"))
 
@@ -118,3 +137,33 @@ ggplot(temp1, aes(x = DayOfYear.y, y = Males, group = Site.y)) +
                    linetype = "longdash")) +
     facet_wrap(~Site.y)
 ```
+
+
+***
+
+<div class = "centered">
+__None__ __of__
+__the__ __pesticides__ __we__
+__have__ __data__ __for__
+__target__ __NOW__ __males,
+__ __females,__ __or__ __eggs.__
+</div>
+
+<div class = "centered">
+![](sadface.jpg)
+</div>
+
+## Ok, let's look at MD use
+
+***
+```{r, echo = FALSE, warning = FALSE, fig.width = 10, fig.height = 6}
+c_md <- subset(c,Trtmnt %in% c("EMD", "100%MD", "1MD", "2MD"))
+pal <- wes_palette("Zissou")
+temp1 <- merge( p.n.by.block, c_md, by = c("Ranch", "Block", "Year"))
+ggplot(temp1, aes(x = DayOfYear.y, y = Males, group = Site.y)) +
+    scale_color_manual(values = pal) +
+    geom_point(size=2) +
+    geom_vline(aes(xintercept = DayOfYear.x,
+                   colour = Product..Agrian.,
+                   linetype = "longdash")) +
+    facet_wrap(~Site.y)
