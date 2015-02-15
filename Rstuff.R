@@ -3817,7 +3817,8 @@ ggplot(resPM, aes(x = rhs, y = meanMSE)) +
 
 
 
-DrawModel("CONV", residuals = TRUE)
+DrawModel("CONV", residuals = FALSE)
+
 DrawModel("ECMD", residuals = TRUE)
 DrawModel("EMD", v1 = "E1", v2 = "E2", v3 = "E3", residuals = TRUE)
 DrawModel("LCMD", residuals = TRUE)
@@ -3870,13 +3871,13 @@ ggplot(subset(c, Trtmnt %ni% c("Conv","Control")), aes(x = JD, y = Males)) + geo
 ggplot(subset(c, Trtmnt %in% c("Conv","Control")), aes(x = JD, y = Males)) + geom_point(size = 2) + facet_wrap(~Site)
 
 ### Lets look at early md
-c_md <- subset(c,Trtmnt %in% c("EMD", "100%MD", "1MD", "2MD"))
+c_md <- subset(c,Trtmnt %in% c("EMD", "100%MD", "50%MD", "100%C", "50%C", "1MD", "2MD", "1CMD", "2CMD"))
 pal <- wes_palette("Zissou")
-temp1 <- merge( p.n.by.block, c_md, by = c("Ranch", "Block", "Year"))
+temp1 <- merge( subset(p.n.by.block, Product..Agrian. == "Puffer NOW"), c_md, by = c("Ranch", "Block", "Year"))
 ggplot(temp1, aes(x = DayOfYear.y, y = Males, group = Site.y)) +
     scale_color_manual(values = pal) +
     geom_point(size=2) +
     geom_vline(aes(xintercept = DayOfYear.x,
-                   colour = Product..Agrian.,
+                   colour = "Product..Agrian.",
                    linetype = "longdash")) +
     facet_wrap(~Site.y)
