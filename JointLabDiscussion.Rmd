@@ -23,9 +23,8 @@ output:
 What's the issue?
 
 - NOW larvae create a particularly suitable environment for _Aspergillus_ _flavus_
-- _A._ _flavus_ create aflatoxin. 
-- As the peanut industry recently discovered, this is not good.
-- Almond growers are trying new IPM methods to control NOW presence.
+- _A._ _flavus_ create aflatoxin which is terribly carcinogenic.
+- Almond growers are trying a variety of IPM methods to control NOW presence.
 - Can we help them?
 
 
@@ -40,7 +39,7 @@ source("testFunctions.R")
 library(wesanderson)
 ```
 
-This is a subset of the data we have:
+This is a subset of variables we have data on:
 ```{r, echo = FALSE}
 colnames(dmg[, c(1:40)])
 ```
@@ -49,7 +48,7 @@ colnames(dmg[, c(1:40)])
 # IPM Data
 
 ***
-we have data on:
+we have data on variables:
 ```{r, echo = FALSE, fig.width = 10}
 colnames(p.n)
 ```
@@ -65,19 +64,10 @@ ggplot(subset(smry, BlocksSprayed >= 50),aes(x = Product..Agrian., y = BlocksSpr
 geom_bar(stat = "identity") + theme(axis.text.x = element_text(angle = 90, hjust = 0))
 ```
 
-## IPM Data
-
-
-__Things__ __to__ __consider:__
-
-- Pesticide use
-- Mating Disruption
-
-
 # Trap Counts
 
 ***
-we have data on:
+we have data on variables:
 ```{r, echo = FALSE}
 colnames(c)
 ```
@@ -154,7 +144,7 @@ __ __females,__ __or__ __eggs.__
 
 ***
 ```{r, echo = FALSE, warning = FALSE, fig.width = 10, fig.height = 6}
-c_md <- subset(c,Trtmnt %in% c("EMD", "100%MD", "50%MD", "100%C", "50%C", "1MD", "2MD", "1CMD", "2CMD"))
+c_md <- subset(c,Trtmnt %in% c("EMD", "LMD", "100%MD", "50%MD", "100%C", "50%C", "1MD", "2MD", "1CMD", "2CMD"))
 pal <- wes_palette("Zissou")
 temp1 <- merge( subset(p.n.by.block, Product..Agrian. == "Puffer NOW"), c_md, by = c("Ranch", "Block", "Year"))
 
@@ -271,11 +261,6 @@ ggplot(subset(resP, fold == 0), aes(x = rhs, y = VAR)) +
 ## Female counts appear to be, on average, the best predictor for nut damage.
 
 ## We can also take a look at individual models to assess their strengths and weaknesses
-
-***
-```{r, echo = FALSE, warning = FALSE, message = FALSE, fig.width = 10, fig.height = 6}
-DrawModel("CONV", residuals = FALSE)
-```
 
 ***
 ```{r, echo = FALSE, warning = FALSE, message = FALSE, fig.width = 10, fig.height = 6}
