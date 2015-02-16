@@ -3881,3 +3881,22 @@ ggplot(temp1, aes(x = DayOfYear.y, y = Males, group = Site.y)) +
                    colour = "Product..Agrian.",
                    linetype = "longdash")) +
     facet_wrap(~Site.y)
+
+c_md <- subset(c,Trtmnt %in% c("EMD", "100%MD", "50%MD", "100%C", "50%C", "1MD", "2MD", "1CMD", "2CMD"))
+pal <- wes_palette("Zissou")
+temp1 <- merge( subset(p.n.by.block, Product..Agrian. == "Puffer NOW"), c_md, by = c("Ranch", "Block", "Year"))
+ggplot(temp1, aes(x = DayOfYear.y, y = Females, group = Site.y)) +
+    scale_color_manual(values = pal) +
+    geom_point(size=2) +
+    geom_vline(aes(xintercept = DayOfYear.x,
+                   colour = "Product..Agrian.",
+                   linetype = "longdash")) +
+    facet_wrap(~Site.y)
+
+
+smry <- ddply(p.n.by.block, .(Product..Agrian.), summarize, BlocksSprayed = length(Block))
+smry$Product..Agrian. <- as.character(smry$Product..Agrian.)
+smry <- smry[order(smry$BlocksSprayed), ]
+smry$Product..Agrian. <- factor(smry$Product..Agrian., levels = smry$Product..Agrian.)
+ggplot(subset(smry, BlocksSprayed >= 50),aes(x = Product..Agrian., y = BlocksSprayed)) +
+geom_bar(stat = "identity") + theme(axis.text.x = element_text(angle = 90, hjust = 0))

@@ -313,7 +313,7 @@ RunSimplePredModel <- function(rhs,
 
         MSE <- mean((residuals(m))^2, na.rm = TRUE)
         COR <- cor(fit, reg_df[, .lhs], use = "pairwise.complete.obs")
-        VAR <- var(residuals(m))
+        VAR <- var(na.omit(residuals(m)))
 
     } else {
 
@@ -353,7 +353,7 @@ DrawModel <- function(trtmnt = "CONV",
              )
 
     set <- dmgNP_sets[[trtmnt]]
-
+    
     if (individual) {
         forPlot <- melt(set,
                         id = setdiff(colnames(set),
@@ -388,7 +388,7 @@ DrawModel <- function(trtmnt = "CONV",
 
         } else {
             ggplot(set, aes(x = Predictions, y = PDT)) +
-                geom_point(size = 2) +
+                geom_point(aes(size = Tot_Nuts)) +
                     labs(title = paste(
                              trtmnt,
                              " with model ",

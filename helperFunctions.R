@@ -643,12 +643,16 @@ AssembleData <- function(test = NULL, ...){
             seas_bins <- cbind(seas_bins[, 1:3], as.data.frame(rescaled))
         }
 
-        dmgNP_sets <<-  dlply(dmgNP,
+        dmgNP_sets <-  dlply(dmgNP,
                               .(na.omit(trt2)),
                               merge,
                               y = seas_bins,
                               by = c("Year", "Ranch", "Block")
                               )
+
+        dmgNP <- merge(dmgNP, seas_bins, by = c("Year", "Ranch", "Block"))
+        
+        dmgNP_sets <<- c(dmgNP_sets, list("ALL" = dmgNP))
         ## <- data assembled
     }
 
