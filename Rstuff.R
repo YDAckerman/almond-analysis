@@ -3719,7 +3719,7 @@ ggplot(dmgNP, aes(x = Tot_Nuts, y = DmgNOW)) + geom_point(size = 2)
 resCount <- testRunSimplePredModel(K = 10, bins = 3, rescale = TRUE,
                                    parallel = TRUE, lhs = "DmgNOW")
 
-resProp <- testRunSimplePredModel(K = 10, bins = 3, rescale = TRUE,
+resProp <- testRunSimplePredModel(K = 0, bins = 3, rescale = TRUE,
                                   parallel = TRUE, lhs = "PDT")
 
 resP <- subset(resProp,
@@ -3819,6 +3819,10 @@ ggplot(resPM, aes(x = rhs, y = meanMSE)) +
 
 DrawModel("CONV", residuals = FALSE)
 
+DrawModel("ALL", residuals = FALSE)
+
+DrawModel("ALL", residuals = TRUE)
+
 DrawModel("ECMD", residuals = TRUE)
 DrawModel("EMD", v1 = "E1", v2 = "E2", v3 = "E3", residuals = TRUE)
 DrawModel("LCMD", residuals = TRUE)
@@ -3900,3 +3904,15 @@ smry <- smry[order(smry$BlocksSprayed), ]
 smry$Product..Agrian. <- factor(smry$Product..Agrian., levels = smry$Product..Agrian.)
 ggplot(subset(smry, BlocksSprayed >= 50),aes(x = Product..Agrian., y = BlocksSprayed)) +
 geom_bar(stat = "identity") + theme(axis.text.x = element_text(angle = 90, hjust = 0))
+
+ggplot(temp1, aes(x = DayOfYear.y, y = Eggs, group = Site.y)) +
+    scale_color_manual(values = pal) +
+    geom_point(size=2) +
+    geom_vline(aes(xintercept = DayOfYear.x,
+                   colour = "Product..Agrian.",
+                   linetype = "longdash")) +
+    facet_wrap(~Site.y)
+
+## 2/16/15 ##
+
+## Check out dplyr

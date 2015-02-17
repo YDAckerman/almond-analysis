@@ -148,7 +148,7 @@ testRunSimplePredModel <-  function(K = 5,
                                     rescale = FALSE,
                                     seed = 10,
                                     parallel = FALSE,
-                                    lhs = "PDT"
+                                    lhs = "PercentDamaged"
                                     ){
     ## @Function testRunSimplePredModel
     ## TODO: write function summary

@@ -279,7 +279,7 @@ RunSimplePredModel <- function(rhs,
                                fold = NULL,
                                .dmg_sets = NULL,
                                .cv_list = NULL,
-                               .lhs = "PDT"
+                               .lhs = "PercentDamaged"
                                ) {
 
 
@@ -289,7 +289,8 @@ RunSimplePredModel <- function(rhs,
     COR <- NA
     MSE <- NA
     VAR <- NA
-
+    MEAN <- NA
+    
     if (is.null(.cv_list)  || is.null(.dmg_sets)){
         stop("Please add .cv_list & dmg_sets & .res_sets")
     }
@@ -313,8 +314,9 @@ RunSimplePredModel <- function(rhs,
 
         MSE <- mean((residuals(m))^2, na.rm = TRUE)
         COR <- cor(fit, reg_df[, .lhs], use = "pairwise.complete.obs")
-        VAR <- var(na.omit(residuals(m)))
-
+        VAR <- var(na.omit(abs(residuals(m))))
+        MEAN <- mean(abs(residuals(m)), na.rm = TRUE)
+        
     } else {
 
         ## split for CV (is this cv even legit?)
@@ -330,9 +332,11 @@ RunSimplePredModel <- function(rhs,
         MSE <- mean((preds - rtest[, .lhs])^2, na.rm = TRUE)
         COR <- cor(preds, rtest[, .lhs], use = "pairwise.complete.obs")
         VAR <- var(preds - rtest[, .lhs], na.rm = TRUE)
+        MEAN <- mean(preds - rtest[, .lhs], na.rm = TRUE)
+        
     }
 
-    data.frame('COR' = COR, 'MSE' = MSE, 'VAR' = VAR)
+    data.frame('COR' = COR, 'MSE' = MSE, 'VAR' = VAR, 'MEAN' = MEAN)
 
 }
 
@@ -359,7 +363,7 @@ DrawModel <- function(trtmnt = "CONV",
                         id = setdiff(colnames(set),
                             na.omit(c(v1, v2, v3)))
                         )
-        ggplot(forPlot, aes( x = value, y = PDT)) +
+        ggplot(forPlot, aes( x = value, y = PercentDamaged)) +
             geom_point(size = 2) +
                 facet_wrap(~variable, scale = "free") +
                     labs(title = paste(
@@ -368,7 +372,7 @@ DrawModel <- function(trtmnt = "CONV",
                              paste(na.omit(c(v1, v2, v3)), collapse = "+")))
     } else {
         vars <- paste(na.omit(c(v1, v2, v3)), collapse = "+")
-        f <- as.formula(paste(c("PDT", vars), collapse = "~"))
+        f <- as.formula(paste(c("PercentDamaged", vars), collapse = "~"))
         m <- glm2(f,
                   family = "poisson",
                   data = set,
@@ -387,7 +391,7 @@ DrawModel <- function(trtmnt = "CONV",
                              paste(na.omit(c(v1, v2, v3)), collapse = "+")))
 
         } else {
-            ggplot(set, aes(x = Predictions, y = PDT)) +
+            ggplot(set, aes(x = Predictions, y = PercentDamaged)) +
                 geom_point(aes(size = Tot_Nuts)) +
                     labs(title = paste(
                              trtmnt,

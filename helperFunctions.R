@@ -619,9 +619,9 @@ AssembleData <- function(test = NULL, ...){
                        )
 
         dmgNP <- dmgNP <<- ddply(dmgNP, .(), transform,
-                                 PDT = DmgNOW / Tot_Nuts,
-                                 PIT = InfNOW / Tot_Nuts,
-                                 PDI = DmgNOW / InfNOW
+                                 PercentDamaged = DmgNOW / Tot_Nuts,
+                                 PercentInfested = InfNOW / Tot_Nuts,
+                                 PercentDMGofINF = DmgNOW / InfNOW
                                  )
 
         cv_list <<- dlply(dmgNP,
