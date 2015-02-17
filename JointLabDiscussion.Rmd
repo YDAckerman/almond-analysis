@@ -1,5 +1,5 @@
 ---
-title: Joint Lab Discussion
+title: Yoni Ackerman; Rosenheim Lab; Joint Lab Discussion
 output:
   ioslides_presentation:
     widescreen: true
@@ -23,35 +23,60 @@ output:
 What's the issue?
 
 - NOW larvae create a particularly suitable environment for _Aspergillus_ _flavus_
-- _A._ _flavus_ create aflatoxin which is terribly carcinogenic.
+- _A._ _flavus_ produce aflatoxin which is terribly carcinogenic.
 - Almond growers are trying a variety of IPM methods to control NOW presence.
-- Can we help them?
+- Can we use some statistics / machine learning techniques to help them?
 
 
 # What Data do we have?
 
+## for 2009-2013 we have:
+
+- nut damage data
+- IPM data
+- trap count data
+
 # Nut Damage
 
-***
 ```{r, echo = FALSE}
 load("../pred_analysis2_11_15.rda")
 source("testFunctions.R")
 library(wesanderson)
 ```
 
-This is a subset of variables we have data on:
-```{r, echo = FALSE}
-colnames(dmg[, c(1:40)])
-```
 
+## Here's a subset of the variables we have data on:
+<div style = "class:centered;top:20px" >
+```{r, echo = FALSE}
+colnames(dmg)[1:30]
+```
+</div>
+
+
+
+## and some sample data:
+<div class = "centered" >
+```{r, echo = FALSE, fig.width = 11}
+head(dmg[, c('Ranch','Block','Year', 'DmgNOW', 'Tot_Nuts','InfNOW', 'Variety', 'trt2')], 10)
+```
 
 # IPM Data
 
-***
-we have data on variables:
-```{r, echo = FALSE, fig.width = 10}
-colnames(p.n)
+
+## Here are the variables we have data on:
+
+```{r, echo = FALSE}
+colnames(p.n.by.block)
 ```
+
+
+
+## and some sample data:
+<div class = "centered" >
+```{r, echo = FALSE, fig.width = 11}
+head(p.n.by.block[, c('Ranch', 'Block', 'Year', 'DayOfYear', 'Product..Agrian.', 'Target.Pest')], 10)
+```
+</div>
 
 ## IPM Data
 __In__ __a__ __nutshell:__
@@ -66,13 +91,19 @@ geom_bar(stat = "identity") + theme(axis.text.x = element_text(angle = 90, hjust
 
 # Trap Counts
 
-***
-we have data on variables:
+
+## we have data on variables:
+
 ```{r, echo = FALSE}
 colnames(c)
 ```
 
-# We can see general patterns in seasonal NOW density
+## and some sample data:
+```{r, echo = FALSE, fig.width = 10}
+head(c[,c('Ranch', 'Block', 'Year', 'DayOfYear', 'Eggs', 'Females', 'Males', 'Trtmnt', 'TrapType')], 10)
+```
+
+# We can use Trap Catch data to see general patterns in seasonal NOW density
 
 ***
 
@@ -107,8 +138,13 @@ ggplot(subset(temp, !is.na(Eggs)),
 		    scale_color_manual(values = wes_palette("Darjeeling"))
 ```
 
+# Quick Examples
 
-## Can we use trap catches and spray / turn-on dates to assess pesticide and MD efficacy?
+- pesticide efficacy
+- effect of mating disruption
+- effect of treatment on nut damage
+
+## Can we use trap catches and spray turn-on dates to assess pesticide efficacy?
 
 ```{r, warning = FALSE, echo = FALSE, fig.width = 10, fig.height = 5}
 c_conv <- subset(c,Trtmnt %in% c("Conv","Control"))
@@ -140,11 +176,11 @@ __ __females,__ __or__ __eggs.__
 ![](sadface.jpg)
 </div>
 
-## Now let's look at MD use
+## Can we see the effects of mating disruption?
 
 ***
 ```{r, echo = FALSE, warning = FALSE, fig.width = 10, fig.height = 6}
-c_md <- subset(c,Trtmnt %in% c("EMD", "LMD", "100%MD", "50%MD", "100%C", "50%C", "1MD", "2MD", "1CMD", "2CMD"))
+c_md <- subset(c,Trtmnt %in% c("EDM", "LMD", "100%MD", "50%MD", "100%C", "50%C", "1MD", "2MD", "1CMD", "2CMD"))
 pal <- wes_palette("Zissou")
 temp1 <- merge( subset(p.n.by.block, Product..Agrian. == "Puffer NOW"), c_md, by = c("Ranch", "Block", "Year"))
 
@@ -183,7 +219,31 @@ ggplot(temp1, aes(x = DayOfYear.y, y = Eggs, group = Site.y)) +
 ## Trap Shutdown
 
 - We'll need to take this into account as we begin to build models
-- Under each treatment type (a variation of pestide &/or MD use) insect variables have different meanings. In particular: comparing male trap catches between treatments is meaningless.
+- Under each treatment type (a variation of pestide &/or mating disruption use) insect variables have different meanings. In particular: comparing male trap catches between treatments is meaningless.
+
+## Treatment vs Nut Damage
+
+***
+<div class = "centered">
+__Treatment__ __vs__ __percent__ __nuts__ __damaged__ __out__ __of__ __TOTAL__ __nuts__
+</div>
+<div class = "centered">
+```{r, echo = FALSE, fig.width = 10, fig.height = 5, warning = FALSE}
+ggplot(dmg, aes(x = trt2, y = PcentNOWdmg)) + geom_boxplot()
+```
+</div>
+
+***
+<div class = "centered">
+__Treatment__ __vs__ __percent__ __nuts__ __damaged__ __out__ __of__ __INFESTED__ __nuts__
+</div>
+
+<div class = "centered">
+```{r, echo = FALSE, fig.width = 10, fig.height = 5, warning = FALSE}
+ggplot(dmg, aes(x = trt2, y = DmgNOW / InfNOW)) + geom_boxplot()
+```
+</div>
+
 
 # Questions, Requests, Thoughts?
 before I start talking about modeling.
@@ -195,51 +255,46 @@ Preliminary explorations:
 - assess pesticide efficacy (data wasn't appropriate).
 - quantify degree of trap shutdown (had some suggestive results).
 
-Current topics:
+Big Questions:
 
-- can we optimize pesticide application dates?
+- can we find pesticide application dates that minimize nut damage?
 - can we find best practices for mating disruption?
 
-## Optimize pesticide use?
+## Our current question:
 
 Can we show that it is more economical to use trap catches to time sprays (thus spraying less) than it is to ignore insect densities and just spray more?
-
-## Best practices for MD?
-
-- When is the best time to turn on a puffer?
-- Where should they be located?
-- What concentration of pheromone is most efficient?
 
 # Thoughts on any of this?
 
 ## How well do insect densities predict nut damage?
 
-\underline{The Setup}
+__The__ __Setup__
 
 For a given block:
 
 - We'll try to estimate % NOW harvest damage using NOW density.
 - We'll need to "bin" insect densities: we'll split the season into three parts, and
 calculate a mean NOW male, female, and egg density for each part. We'll call these M1, M2, M3, F1, F2, etc.
-- We'll use a poisson-distributed response given by: $$PDT = \frac{\mbox{nuts damaged by NOW}}{\mbox{total nuts harvested}}$$
+- We'll use a poisson-distributed response given by: $$PercentDamaged = \frac{\mbox{nuts damaged by NOW}}{\mbox{total nuts harvested}}$$
 
 ## Models
 
 - We'll use generalized linear models.
 - We'll draw all combinations of 1, 2, and 3 variables from $$\{M1,M2,M3,F1,F2,F3,E1,E2,E3\}$$
 - This will give us $\binom{9}{3} + {{9}\choose{2}} + {9 \choose 1} = 129$ formulae.
-- ex: $$PDT \sim M1 + E2 + F3$$ $$PDT \sim E3 + F1$$
-- Finally, we'll use some different metrics to decide which model is the best.
+- ex: $$PercentDamaged \sim M1 + E2 + F3$$ $$PercentDamaged \sim E3 + F1$$
+- Finally, we'll use some different metrics to decide which model is the best, including correlation coefficients, mean residuals, and cross validation.
 
-## COR 
-```{r, echo = FALSE, warning = FALSE, message = FALSE, fig.width = 10, fig.height = 5.5}
+# Just a few example models and metrics
+
+## Correlation Coefficient 
+```{r, echo = FALSE, warning = FALSE, message = FALSE, fig.width = 10, fig.height = 5.5, cache = FALSE}
 resProp <- testRunSimplePredModel(K = 10, bins = 3, rescale = TRUE,
-                                  parallel = TRUE, lhs = "PDT")
+                                  parallel = TRUE, lhs = "PercentDamaged")
 resP <- subset(resProp,
                rhs %in% c("M1+M2+M3",
                           "E1+E2+E3",
-                          "F1+F2+F3",
-                          paste0(c("M","E","F"), rep(1:3, each = 3))
+                          "F1+F2+F3"
                           )
                )
 
@@ -250,15 +305,17 @@ ggplot(subset(resP, fold == 0), aes(x = rhs, y = COR)) +
 ```
 
 
-## VAR 
+## Average Residual (+ variance)
 ```{r, echo = FALSE, warning = FALSE, message = FALSE, fig.width = 10, fig.height = 5.5}
-ggplot(subset(resP, fold == 0), aes(x = rhs, y = VAR)) +
+
+limits <- aes(ymax = MEAN + VAR, ymin = MEAN - VAR)
+ggplot(subset(resP, fold == 0), aes(x = rhs, y = MEAN)) +
     geom_point(size = 2) +
     facet_wrap(~trtmnt, scale = "free") +
-     theme(axis.text.x = element_text(angle = 90, hjust = 0))
-```
+    geom_errorbar(limits, position = 'dodge', width = .25) +
+    theme(axis.text.x = element_text(angle = 90, hjust = 0))
 
-## Female counts appear to be, on average, the best predictor for nut damage.
+```
 
 ## We can also take a look at individual models to assess their strengths and weaknesses
 
@@ -266,3 +323,10 @@ ggplot(subset(resP, fold == 0), aes(x = rhs, y = VAR)) +
 ```{r, echo = FALSE, warning = FALSE, message = FALSE, fig.width = 10, fig.height = 6}
 DrawModel("ALL", residuals = TRUE)
 ```
+
+***
+```{r, echo = FALSE, warning = FALSE, message = FALSE, fig.width = 10, fig.height = 6}
+DrawModel("ALL", residuals = FALSE)
+```
+
+# What would YOU do with this data set? What might be of ecological, rather than agricultural, significance?
