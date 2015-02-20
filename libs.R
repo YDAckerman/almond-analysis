@@ -1,4 +1,5 @@
 ## packages to open on startup (used for functions)
+
 library(plyr)
 library(lme4)
 library(AICcmodavg)
@@ -9,3 +10,4 @@ library(doMC)
 library(pryr)
 library(reshape)
 library(glm2)
+library(dplyr)
