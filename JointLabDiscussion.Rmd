@@ -144,7 +144,7 @@ ggplot(subset(temp, !is.na(Eggs)),
 - effect of mating disruption
 - effect of treatment on nut damage
 
-## Can we use trap catches and spray turn-on dates to assess pesticide efficacy?
+## Ex 1: Can we use trap catches and spray turn-on dates to assess pesticide efficacy?
 
 ```{r, warning = FALSE, echo = FALSE, fig.width = 10, fig.height = 5}
 c_conv <- subset(c,Trtmnt %in% c("Conv","Control"))
@@ -176,15 +176,21 @@ __ __females,__ __or__ __eggs.__
 ![](sadface.jpg)
 </div>
 
-## Can we see the effects of mating disruption?
+## Ex 2: Can we see the effects of mating disruption?
+
 
 ***
-```{r, echo = FALSE, warning = FALSE, fig.width = 10, fig.height = 6}
+
+<div class = "centered">
+__Males__
+</div>
+
+```{r, echo = FALSE, warning = FALSE, fig.width = 10, fig.height = 5}
 c_md <- subset(c,Trtmnt %in% c("EDM", "LMD", "100%MD", "50%MD", "100%C", "50%C", "1MD", "2MD", "1CMD", "2CMD"))
 pal <- wes_palette("Zissou")
 temp1 <- merge( subset(p.n.by.block, Product..Agrian. == "Puffer NOW"), c_md, by = c("Ranch", "Block", "Year"))
 
-ggplot(temp1, aes(x = DayOfYear.y, y = Males, group = Site.y)) +
+ggplot(temp1, aes(x = DayOfYear.y, y = Males, group = Site.y, colour = TrapType)) +
     scale_color_manual(values = pal) +
     geom_point(size=2) +
     geom_vline(aes(xintercept = DayOfYear.x,
@@ -194,7 +200,11 @@ ggplot(temp1, aes(x = DayOfYear.y, y = Males, group = Site.y)) +
 ```	
 
 ***
-```{r, echo = FALSE, warning = FALSE, fig.width = 10, fig.height = 6}
+<div class = "centered">
+__Females__
+</div>
+
+```{r, echo = FALSE, warning = FALSE, fig.width = 10, fig.height = 5}
 ggplot(temp1, aes(x = DayOfYear.y, y = Females, group = Site.y)) +
     scale_color_manual(values = pal) +
     geom_point(size=2) +
@@ -205,7 +215,11 @@ ggplot(temp1, aes(x = DayOfYear.y, y = Females, group = Site.y)) +
 ```
 
 ***
-```{r, echo = FALSE, warning = FALSE, fig.width = 10, fig.height = 6}
+<div class = "centered">
+__Eggs__
+</div>
+
+```{r, echo = FALSE, warning = FALSE, fig.width = 10, fig.height = 5}
 ggplot(temp1, aes(x = DayOfYear.y, y = Eggs, group = Site.y)) +
     scale_color_manual(values = pal) +
     geom_point(size=2) +
@@ -221,7 +235,7 @@ ggplot(temp1, aes(x = DayOfYear.y, y = Eggs, group = Site.y)) +
 - We'll need to take this into account as we begin to build models
 - Under each treatment type (a variation of pestide &/or mating disruption use) insect variables have different meanings. In particular: comparing male trap catches between treatments is meaningless.
 
-## Treatment vs Nut Damage
+## Ex 3: Treatment vs Nut Damage
 
 ***
 <div class = "centered">
