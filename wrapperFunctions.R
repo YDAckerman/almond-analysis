@@ -279,20 +279,14 @@ RunSimplePredModel <- function(rhs,
                                fold = NULL,
                                .dmg_sets = NULL,
                                .cv_list = NULL,
-                               .lhs = "PercentDamaged"
+                               .lhs = "PercentDamaged",
+                               .loocv = FALSE
                                ) {
 
 
     ## @Function RunSimplePredModel
     ## TODO: write function summary
 
-    COR <- NA
-    MSE <- NA
-    VAR <- NA
-    MEAN <- NA
-    PercError <- NA
-    FreqError <- NA
-        
     if (is.null(.cv_list)  || is.null(.dmg_sets)){
         stop("Please add .cv_list & dmg_sets & .res_sets")
     }
@@ -300,86 +294,107 @@ RunSimplePredModel <- function(rhs,
     f <- paste0(.lhs, "~", rhs)
     f <- as.formula(f)
 
-    ## we'll just do a regression directly on the data
-    ## as opposed to on residuals from another model.
+    ## Pull out the desired dataset:
     reg_df <- .dmg_sets[[trtmnt]]
 
-    if (fold == 0) {
-
-        m <- glm2(f,
-                  data = reg_df,
-                  family = "poisson",
-                  na.action = na.exclude
-                  )
-
-        fit <- predict(m, type = "response", na.action = na.exclude)
-
-        results <- data.frame('predicted' = fit,
-                              'actual' = reg_df[, .lhs],
-                              'totalNuts' = reg_df[, 'Tot_Nuts']
-                              )
-
-        ## dplyr experimentation
-        tmp1 <- results %>%
-            dplyr::filter(predicted < .01 & actual >= .01 ) %>%
-                dplyr::mutate(
-                    predNuts = predicted * totalNuts,
-                    actNuts = actual * totalNuts,
-                    ) %>%
-                        dplyr::summarise(
-                            sumPredNuts = sum(predNuts, na.rm = TRUE),
-                            sumActNuts = sum(actNuts, na.rm = TRUE)
-                            ) %>%
-                                dplyr::transmute(
-                                    percError = sumPredNuts / sumActNuts
-                                    )
-        
-        tmp2 <- results %>%
-            dplyr::filter(predicted < .01) %>%
-                dplyr::summarise(
-                    numUnacceptable = sum(actual >= .01, na.rm = TRUE),
-                    numAcceptable = sum(actual < .01, na.rm = TRUE)
-                    ) %>%
-                        dplyr::transmute(
-                            freqError = numUnacceptable /numAcceptable
-                            )
-                
-        MSE <- mean((residuals(m))^2, na.rm = TRUE)
-        COR <- cor(results$predicted,
-                   results$actual,
-                   use = "pairwise.complete.obs"
-                   )
-        VARMSE <- var(na.omit((residuals(m))^2))
-        PercError <- tmp1$percError
-        FreqError <- tmp2$freqError
-        
-    } else {
+    
+    if (.loocv) {
 
         ## split for CV (is this cv even legit?)
         rtrain <- reg_df[-.cv_list[[trtmnt]][[fold]], ]
         rtest <- reg_df[.cv_list[[trtmnt]][[fold]], ]
-
+        
         ## formula
         m <- glm2(f, data = rtrain, family = "poisson")
-
-        ## Make predictions:
-        preds <- predict(m, newdata = rtest)
-
-        MSE <- mean((preds - rtest[, .lhs])^2, na.rm = TRUE)
-        COR <- cor(preds, rtest[, .lhs], use = "pairwise.complete.obs")
-        VAR <- var(preds - rtest[, .lhs], na.rm = TRUE)
-        MEAN <- mean(preds - rtest[, .lhs], na.rm = TRUE)
         
+        ## Make predictions:
+        data.frame('predicted' = predict(m, newdata = rtest),
+                   'actual' = rtest[, .lhs],
+                   'totalNuts' = rtest[, 'Tot_Nuts']
+                   )
+    } else {
+
+        COR <- NA
+        MSE <- NA
+        VAR <- NA
+        MEAN <- NA
+        PercError <- NA
+        FreqError <- NA
+     
+        if (fold == 0) {
+
+            m <- glm2(f,
+                      data = reg_df,
+                      family = "poisson",
+                      na.action = na.exclude
+                      )
+
+            fit <- predict(m, type = "response", na.action = na.exclude)
+
+            results <- data.frame('predicted' = fit,
+                                  'actual' = reg_df[, .lhs],
+                                  'totalNuts' = reg_df[, 'Tot_Nuts']
+                                  )
+
+            ## dplyr experimentation
+            tmp1 <- results %>%
+                dplyr::filter(predicted < .01 & actual >= .01 ) %>%
+                    dplyr::mutate(
+                        predNuts = predicted * totalNuts,
+                        actNuts = actual * totalNuts
+                        ) %>%
+                            dplyr::summarise(
+                                sumPredNuts = sum(predNuts, na.rm = TRUE),
+                                sumActNuts = sum(actNuts, na.rm = TRUE)
+                                ) %>%
+                                    dplyr::transmute(
+                                        percError = sumPredNuts / sumActNuts
+                                        )
+            
+            tmp2 <- results %>%
+                dplyr::filter(predicted < .01) %>%
+                    dplyr::summarise(
+                        numUnacceptable = sum(actual >= .01, na.rm = TRUE),
+                        numAcceptable = sum(actual < .01, na.rm = TRUE)
+                        ) %>%
+                            dplyr::transmute(
+                                freqError = numUnacceptable /numAcceptable
+                                )
+            
+            MSE <- mean((residuals(m))^2, na.rm = TRUE)
+            COR <- cor(results$predicted,
+                       results$actual,
+                       use = "pairwise.complete.obs"
+                       )
+            VARMSE <- var((residuals(m))^2, na.rm = TRUE)
+            PercError <- tmp1$percError
+            FreqError <- tmp2$freqError
+            
+        } else {
+
+            ## split for CV (is this cv even legit?)
+            rtrain <- reg_df[-.cv_list[[trtmnt]][[fold]], ]
+            rtest <- reg_df[.cv_list[[trtmnt]][[fold]], ]
+
+            ## formula
+            m <- glm2(f, data = rtrain, family = "poisson")
+
+            ## Make predictions:
+            preds <- predict(m, newdata = rtest)
+
+            MSE <- mean((preds - rtest[, .lhs])^2, na.rm = TRUE)
+            COR <- cor(preds, rtest[, .lhs], use = "pairwise.complete.obs")
+            VARMSE <- var((preds - rtest[, .lhs])^2, na.rm = TRUE)
+            
+        }
+
+        data.frame('COR' = COR,
+                   'MSE' = MSE,
+                   'VARMSE' = VARMSE,
+                   'PercError' = PercError,
+                   'FreqError' = FreqError
+                   )
     }
-
-    data.frame('COR' = COR,
-               'MSE' = MSE,
-               'VAR' = VAR,
-               'MEAN' = MEAN,
-               'PercError' = PercError,
-               'FreqError' = FreqError
-               )
-
 }
 
 DrawModel <- function(trtmnt = "CONV",
@@ -456,3 +471,4 @@ DrawModel <- function(trtmnt = "CONV",
     }
 
 }
+

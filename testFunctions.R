@@ -189,3 +189,36 @@ testRunSimplePredModel <-  function(K = 5,
 
 }
 
+testModelLOOCV <- function(trtmnt = "ALL",
+                           models = NULL,
+                           rescale = FALSE,
+                           parallel = FALSE,
+                           lhs = "PercentDamaged"
+                           ) {
+
+    if (is.null(models)) {
+        stop("must have models")
+    }
+
+    AssembleData(test = "testModelLOOCV", rescale = rescale, trtmnt = trtmnt)
+    AssembleParameterCombs(test = "testModelLOOCV",
+                           models = models,
+                           rows = which(!is.na(dmgNP_sets[[trtmnt]][, lhs])),
+                           trtmnt = trtmnt
+                           )
+
+    ## parallel:
+    if (parallel) {registerDoMC(cores = 4)}
+    par_opts <- list(.export = c("dmgNP_sets", "cv_list"))
+
+    results <- mdply(val_grid,
+                     RunSimplePredModel,
+                     .dmg_sets = dmgNP_sets,
+                     .cv_list = cv_list,
+                     .lhs = lhs,
+                     .progress = "text",
+                     .parallel = parallel,
+                     .paropts = par_opts,
+                     .inform = TRUE
+                     )
+}
