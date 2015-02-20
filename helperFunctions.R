@@ -624,12 +624,21 @@ AssembleData <- function(test = NULL, ...){
                                  PercentDMGofINF = DmgNOW / InfNOW
                                  )
 
+        ## calculate cross validation folds for treatments
         cv_list <<- dlply(dmgNP,
                           .(na.omit(trt2)),
                           FoldData,
                           k = params$K,
                           .seed = params$seed
                           )
+
+        ## calculate and add in cv folds for "all" data.
+        cv_list <<- c(cv_list, list("ALL" = FoldData(
+                                        dmgNP,
+                                        k = params$K,
+                                        .seed = params$seed
+                                        ))
+                      )
 
         insect_vars <- paste0(c("M", "E", "F"), rep(1:params$bins, each = 3))
         seas_bins <- ddply(c,
@@ -720,7 +729,7 @@ AssembleParameterCombs <- function(test = NULL, ...){
 
         ## Assemble parameter combinations ->
         val_grid <<- expand.grid(rhs,
-                            as.character(na.omit(unique(dmgNP$trt2))),
+                            c(as.character(na.omit(unique(dmgNP$trt2))), "ALL"),
                             0:params$K,
                             stringsAsFactors = FALSE
                             )
