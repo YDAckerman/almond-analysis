@@ -290,7 +290,9 @@ RunSimplePredModel <- function(rhs,
     MSE <- NA
     VAR <- NA
     MEAN <- NA
-    
+    PercError <- NA
+    FreqError <- NA
+        
     if (is.null(.cv_list)  || is.null(.dmg_sets)){
         stop("Please add .cv_list & dmg_sets & .res_sets")
     }
@@ -312,10 +314,44 @@ RunSimplePredModel <- function(rhs,
 
         fit <- predict(m, type = "response", na.action = na.exclude)
 
+        results <- data.frame('predicted' = fit,
+                              'actual' = reg_df[, .lhs],
+                              'totalNuts' = reg_df[, 'Tot_Nuts']
+                              )
+
+        ## dplyr experimentation
+        tmp1 <- results %>%
+            dplyr::filter(predicted < .01 & actual >= .01 ) %>%
+                dplyr::mutate(
+                    predNuts = predicted * totalNuts,
+                    actNuts = actual * totalNuts,
+                    ) %>%
+                        dplyr::summarise(
+                            sumPredNuts = sum(predNuts, na.rm = TRUE),
+                            sumActNuts = sum(actNuts, na.rm = TRUE)
+                            ) %>%
+                                dplyr::transmute(
+                                    percError = sumPredNuts / sumActNuts
+                                    )
+        
+        tmp2 <- results %>%
+            dplyr::filter(predicted < .01) %>%
+                dplyr::summarise(
+                    numUnacceptable = sum(actual >= .01, na.rm = TRUE),
+                    numAcceptable = sum(actual < .01, na.rm = TRUE)
+                    ) %>%
+                        dplyr::transmute(
+                            freqError = numUnacceptable /numAcceptable
+                            )
+                
         MSE <- mean((residuals(m))^2, na.rm = TRUE)
-        COR <- cor(fit, reg_df[, .lhs], use = "pairwise.complete.obs")
-        VAR <- var(na.omit(abs(residuals(m))))
-        MEAN <- mean(abs(residuals(m)), na.rm = TRUE)
+        COR <- cor(results$predicted,
+                   results$actual,
+                   use = "pairwise.complete.obs"
+                   )
+        VARMSE <- var(na.omit((residuals(m))^2))
+        PercError <- tmp1$percError
+        FreqError <- tmp2$freqError
         
     } else {
 
@@ -336,7 +372,13 @@ RunSimplePredModel <- function(rhs,
         
     }
 
-    data.frame('COR' = COR, 'MSE' = MSE, 'VAR' = VAR, 'MEAN' = MEAN)
+    data.frame('COR' = COR,
+               'MSE' = MSE,
+               'VAR' = VAR,
+               'MEAN' = MEAN,
+               'PercError' = PercError,
+               'FreqError' = FreqError
+               )
 
 }
 
@@ -391,8 +433,21 @@ DrawModel <- function(trtmnt = "CONV",
                              paste(na.omit(c(v1, v2, v3)), collapse = "+")))
 
         } else {
+
+            tmp <- set %>%
+                select(Predictions, PercentDamaged) %>%
+                    filter( Predictions <= .01 & PercentDamaged >= .01)
+            
+            danger_zone <- with(tmp,
+                                data.frame(
+                                    x = c(0, 0, .01, .01),
+                                    y = c(.01, max(PercentDamaged, na.rm = TRUE),
+                                         max(PercentDamaged, na.rm = TRUE), .01
+                                    )))
+
             ggplot(set, aes(x = Predictions, y = PercentDamaged)) +
                 geom_point(aes(size = Tot_Nuts)) +
+                    geom_polygon(data=danger_zone, aes(x, y), fill="#d8161688") +
                     labs(title = paste(
                              trtmnt,
                              " with model ",

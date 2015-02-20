@@ -3719,8 +3719,9 @@ ggplot(dmgNP, aes(x = Tot_Nuts, y = DmgNOW)) + geom_point(size = 2)
 resCount <- testRunSimplePredModel(K = 10, bins = 3, rescale = TRUE,
                                    parallel = TRUE, lhs = "DmgNOW")
 
-resProp <- testRunSimplePredModel(K = 0, bins = 3, rescale = TRUE,
-                                  parallel = TRUE, lhs = "PDT")
+resProp <- testRunSimplePredModel(K = 10, bins = 3, rescale = TRUE,
+                                  parallel = TRUE, lhs = "PercentDamage")
+
 
 resP <- subset(resProp,
                rhs %in% c("M1+M2+M3",
@@ -3729,7 +3730,6 @@ resP <- subset(resProp,
                           paste0(c("M","E","F"), rep(1:3, each = 3))
                           )
                )
-
 resC <- subset(resCount,
                rhs %in% c("M1+M2+M3",
                           "E1+E2+E3",
@@ -3760,9 +3760,11 @@ ggplot(subset(resP, fold == 0), aes(x = rhs, y = COR)) +
     facet_wrap(~trtmnt, scale = "free") +
      theme(axis.text.x = element_text(angle = 90, hjust = 0))
 
-ggplot(subset(resP, fold == 0), aes(x = rhs, y = VAR)) +
+limits <- aes(ymax = MEAN + VAR, ymin = MEAN - VAR)
+ggplot(subset(resP, fold == 0), aes(x = rhs, y = MEAN)) +
     geom_point(size = 2) +
     facet_wrap(~trtmnt, scale = "free") +
+    geom_errorbar(limits, position = 'dodge', width = .25) +
     theme(axis.text.x = element_text(angle = 90, hjust = 0))
 
 ggplot(subset(resC, fold == 0), aes(x = rhs, y = VAR)) +
@@ -3817,14 +3819,18 @@ ggplot(resPM, aes(x = rhs, y = meanMSE)) +
 
 
 
-DrawModel("CONV", residuals = FALSE)
+DrawModel("LCMD", residuals = FALSE)
+
+
 
 DrawModel("ALL", residuals = FALSE)
 
 DrawModel("ALL", residuals = TRUE)
 
 DrawModel("ECMD", residuals = TRUE)
-DrawModel("EMD", v1 = "E1", v2 = "E2", v3 = "E3", residuals = TRUE)
+
+DrawModel("EMD", v1 = "E1", v2 = "E2", v3 = "E3", residuals = FALSE)
+
 DrawModel("LCMD", residuals = TRUE)
 DrawModel("LMD", v1 = "E1", v2 = "E2", v3 = "E3", residuals = TRUE)
 
@@ -3916,3 +3922,23 @@ ggplot(temp1, aes(x = DayOfYear.y, y = Eggs, group = Site.y)) +
 ## 2/16/15 ##
 
 ## Check out dplyr
+
+## 2/19/15 ##
+
+resProp <- testRunSimplePredModel(K = 10, bins = 3, rescale = TRUE,
+                                  parallel = TRUE)
+
+temp <- resProp %>%
+    filter(trtmnt == "ALL") %>%
+    group_by( rhs) %>%
+    dplyr::summarise(meanCOR = mean(COR, na.rm = TRUE)) %>%
+    dplyr::arrange(desc(meanCOR))
+
+head(temp)
+
+DrawModel("ALL",v1 = "F2", v2 = "E3", v3 = "F3", residuals = FALSE)
+
+tmp <- dmg %>%
+    dplyr::summarise(
+        largeSamples = sum(Tot_Nuts > 400, na.rm = TRUE)
+        )
