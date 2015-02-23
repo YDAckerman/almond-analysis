@@ -651,7 +651,7 @@ AssembleData <- function(test = NULL, ...){
                       )
 
         if (!exists("dmgNP_sets") ||
-            attr(get("dmgNP_sets"), "scaled") != params$rescale) {
+            (attr(get("dmgNP_sets"), "scaled") != params$rescale)) {
             insect_vars <- paste0(c("M", "E", "F"), rep(1:params$bins, each = 3))
             seas_bins <- ddply(c,
                                .(Year, Ranch, Block),
@@ -674,7 +674,7 @@ AssembleData <- function(test = NULL, ...){
             dmgNP <- merge(dmgNP, seas_bins, by = c("Year", "Ranch", "Block"))
             
             dmgNP_sets <<- c(dmgNP_sets, list("ALL" = dmgNP))
-            attr(dmgNP_sets, "scaled") <- params$rescale
+            attr(dmgNP_sets, "scaled") <<- params$rescale
         } else {
             dmgNP_sets <<- get('dmgNP_sets')
         }
@@ -741,7 +741,7 @@ AssembleData <- function(test = NULL, ...){
         names(cv_list) <<- params$trtmnt
         
         if (!exists("dmgNP_sets") ||
-            attr(get("dmgNP_sets"), "scaled") != params$rescale) {
+            (attr(get("dmgNP_sets"), "scaled") != params$rescale)) {
         
             insect_vars <- paste0(c("M", "E", "F"), rep(1:params$bins, each = 3))
             seas_bins <- ddply(c,
@@ -784,19 +784,23 @@ AssembleParameterCombs <- function(test = NULL, ...){
 
         ## Assemble insect variable combinations and key ->
         insect_vars <- c(paste0(c("M", "E", "F"),
-                                rep(1:params$bins, each = 3)), NA, NA)
+                                rep(1:params$bins, each = 3)))
 
         ## find combinations:
-        insect_combs <- t(combn(insect_vars, 3))
+        insect_combs <- llply(1:3, function(x) { t(combn(insect_vars, x)) })
 
         ## make key:
         insect_grid <<- as.data.frame(insect_combs)
         colnames(insect_grid) <<- c("V1", "V2", "V3")
-        rhs <- apply(insect_combs,
-                     1,
-                     function(x) paste(na.omit(x), collapse = "+")
-                     )
-        insect_grid$rhs <<- rhs
+
+        rhs <- llply(1:3, function(X)
+                     {
+                         apply(insect_combs[[X]],1,
+                               function(x) paste(x, collapse = "+")
+                               )
+                     })
+
+        insect_grid$rhs <<- unlist(rhs)
         insect_grid$ModelID <<- 1:length(rhs)
         ## <- combination and key assembled
 
