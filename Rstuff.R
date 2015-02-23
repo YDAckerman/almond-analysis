@@ -3942,3 +3942,76 @@ tmp <- dmg %>%
     dplyr::summarise(
         largeSamples = sum(Tot_Nuts > 400, na.rm = TRUE)
         )
+
+## 2/20/15 ##
+
+e <- new.env()
+e$functions <- source("~/Documents/RosenheimLab/almond/R/testFunctions.R")
+e$data <- load("pred_analysis2_11_15.rda")
+
+## Ach Idk. i'd have to do more research.
+
+## ok, let's check out the metrics:
+resProp <- testRunSimplePredModel(K = 0, bins = 3, rescale = TRUE,
+                                  parallel = TRUE)
+
+ggplot(resProp, aes(x = rhs, y = PercError)) + geom_point(size = 2) + facet_wrap(~trtmnt)
+
+ggplot(resProp, aes(x = meanPercError, y = FreqError)) + geom_point(size = 2) + facet_wrap(~trtmnt, scale = "free")
+
+
+## 2/23/15 ##
+resLOOCV <- testModelLOOCV(models = "F1 + F2 + F3",
+                           rescale = TRUE,
+                           parallel = TRUE)
+
+## questions about assign:
+envifun <- function(){
+    a = 10
+    a <- assign("a", 5, envir = parent.env(env = environment()))
+    print(a)
+}
+
+tmp <- filter(resLOOCV, predicted < .01 & actual >= .01)
+danger_zone <- with(tmp,
+                    data.frame(
+                        x = c(0,0,.01,.01),
+                        y = c(.01,
+                            max(actual, na.rm = TRUE),
+                            max(actual, na.rm = TRUE),
+                            .01
+                            )))
+ggplot(resLOOCV, aes(predicted, actual)) +
+    geom_point(aes(size = totalNuts)) +
+    geom_polygon(data = danger_zone, aes(x, y), fill = "#d8161688")
+
+
+bestMods <- resProp %>%
+    filter(trtmnt == "ALL") %>%
+    arrange(FreqError, meanPercError) %>%
+    summarise(best = head(rhs, 10))
+
+resLOOCV <- testModelLOOCV(models = bestMods$best,
+                           rescale = TRUE,
+                           parallel = TRUE)
+
+tmp1 <- resLOOCV %>%
+    dplyr::group_by(rhs) %>%
+    dplyr::filter(predicted < .01 & actual >= .01) %>%
+    dplyr::mutate(percError = actual - predicted) %>%
+    dplyr::summarise(
+        meanPercError = mean(percError, na.rm = TRUE)
+        )
+tmp2 <- resLOOCV %>%
+    dplyr::group_by(rhs) %>%
+    dplyr::filter(predicted < .01) %>%
+    dplyr::summarise(
+        numUnacpt = sum(actual >= .01, na.rm = TRUE),
+        numPreds = sum(predicted < .01, na.rm = TRUE)
+        ) %>%
+    dplyr::mutate(
+        freqError = numUnacpt / numPreds
+        )
+tmp <- merge(tmp1, tmp2, by = c("rhs"))
+
+ggplot(tmp, aes(meanPercError, freqError, colour = rhs)) + geom_point(size = 2)

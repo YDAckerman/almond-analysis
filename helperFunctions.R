@@ -614,7 +614,9 @@ RenameTraps <- function(type){
 }
 
 AssembleData <- function(test = NULL, ...){
+
     params <- list(...)
+
     if(test == "testRunSimplePredModel"){
         ## Assemble all the required data ->
         if(!exists("dmgNP")){
@@ -625,63 +627,69 @@ AssembleData <- function(test = NULL, ...){
                            InfNOW = sum(InfNOW, na.rm = TRUE)
                            )
 
-            dmgNP <- dmgNP <<- ddply(dmgNP, .(), transform,
+            dmgNP <- assign("dmgNP",
+                            ddply(dmgNP, .(), transform,
                                      PercentDamaged = DmgNOW / Tot_Nuts,
                                      PercentInfested = InfNOW / Tot_Nuts,
                                      PercentDMGofINF = DmgNOW / InfNOW
-                                     )
+                                  ),
+                            envir = parent.env(env = environment())
+                            )
         } else {
             dmgNP <- get('dmgNP')
         }
 
         ## calculate cross validation folds for treatments
-        cv_list <<- dlply(dmgNP,
-                          .(na.omit(trt2)),
-                          FoldData,
-                          k = params$K,
-                          .seed = params$seed
-                          )
+        cv_list <- dlply(dmgNP,
+                         .(na.omit(trt2)),
+                         FoldData,
+                         k = params$K,
+                         .seed = params$seed
+                         )
 
         ## calculate and add in cv folds for "all" data.
-        cv_list <<- c(cv_list, list("ALL" = FoldData(
-                                        dmgNP,
-                                        k = params$K,
-                                        .seed = params$seed
-                                        ))
-                      )
-
-        if (!exists("dmgNP_sets") ||
-            (attr(get("dmgNP_sets"), "scaled") != params$rescale)) {
-            insect_vars <- paste0(c("M", "E", "F"), rep(1:params$bins, each = 3))
-            seas_bins <- ddply(c,
-                               .(Year, Ranch, Block),
-                               BinSeason,
-                               num.bins = params$bins)
-            
-            ## do we rescale the insect variables (?):
-            if (params$rescale) {
-                rescaled <- llply(seas_bins[, insect_vars], rescaler)
-                seas_bins <- cbind(seas_bins[, 1:3], as.data.frame(rescaled))
-            }
-            
-            dmgNP_sets <-  dlply(dmgNP,
-                                 .(na.omit(trt2)),
-                                 merge,
-                                 y = seas_bins,
-                                 by = c("Year", "Ranch", "Block")
-                                 )
-            
-            dmgNP <- merge(dmgNP, seas_bins, by = c("Year", "Ranch", "Block"))
-            
-            dmgNP_sets <<- c(dmgNP_sets, list("ALL" = dmgNP))
-            attr(dmgNP_sets, "scaled") <<- params$rescale
-        } else {
-            dmgNP_sets <<- get('dmgNP_sets')
+        assign("cv_list",
+               c(cv_list, list("ALL" = FoldData(
+                                   dmgNP,
+                                   k = params$K,
+                                   .seed = params$seed
+                                   ))
+                 ),
+               envir = parent.env(env = environment())
+               )
+        
+        
+        insect_vars <- paste0(c("M", "E", "F"), rep(1:params$bins, each = 3))
+        seas_bins <- ddply(c,
+                           .(Year, Ranch, Block),
+                           BinSeason,
+                           num.bins = params$bins)
+        
+        ## do we rescale the insect variables (?):
+        if (params$rescale) {
+            rescaled <- llply(seas_bins[, insect_vars], rescaler)
+            seas_bins <- cbind(seas_bins[, 1:3], as.data.frame(rescaled))
         }
+        
+        dmgNP_sets <-  dlply(dmgNP,
+                             .(na.omit(trt2)),
+                             merge,
+                             y = seas_bins,
+                             by = c("Year", "Ranch", "Block")
+                             )
+        
+        dmgNP <- merge(dmgNP, seas_bins, by = c("Year", "Ranch", "Block"))
+        
+        assign("dmgNP_sets",
+               c(dmgNP_sets, list("ALL" = dmgNP)),
+               envir = parent.env(env = environment())
+               )
+        
         ## <- data assembled
     }
-
+    
     if( test == "testRunParametricCV"){
+        ## TODO: change <<- to assign
 
         cv_list <<- dlply(dmg,
                          .(eval(parse(text = params$splitVar))),
@@ -719,58 +727,59 @@ AssembleData <- function(test = NULL, ...){
 
     if (test == "testModelLOOCV") {
         ## Assemble all the required data ->
-        if( !exists("dmgNP")){
-            dmgNP <- dplyr::filter(dmg, Variety == "NP")
-            dmgNP <- ddply(dmgNP, .(Year, Ranch, Block, trt2), summarize,
-                           Tot_Nuts = sum(Tot_Nuts, na.rm = TRUE),
-                           DmgNOW = sum(DmgNOW, na.rm = TRUE),
-                           InfNOW = sum(InfNOW, na.rm = TRUE)
-                           )
 
-            dmgNP <- dmgNP <<- ddply(dmgNP, .(), transform,
-                                     PercentDamaged = DmgNOW / Tot_Nuts,
-                                     PercentInfested = InfNOW / Tot_Nuts,
-                                     PercentDMGofINF = DmgNOW / InfNOW
-                                     )
-        } else {
-            dmgNP <<- get('dmgNP')
+        dmgNP <- dplyr::filter(dmg, Variety == "NP")
+        dmgNP <- ddply(dmgNP, .(Year, Ranch, Block, trt2), summarize,
+                       Tot_Nuts = sum(Tot_Nuts, na.rm = TRUE),
+                       DmgNOW = sum(DmgNOW, na.rm = TRUE),
+                       InfNOW = sum(InfNOW, na.rm = TRUE)
+                       )
+
+        dmgNP <- assign("dmgNP",
+                        ddply(dmgNP, .(), transform,
+                              PercentDamaged = DmgNOW / Tot_Nuts,
+                              PercentInfested = InfNOW / Tot_Nuts,
+                              PercentDMGofINF = DmgNOW / InfNOW
+                              ),
+                        envir = parent.env(env = environment())
+                        )
+
+        insect_vars <- paste0(c("M", "E", "F"), rep(1:params$bins, each = 3))
+        seas_bins <- ddply(c,
+                           .(Year, Ranch, Block),
+                           BinSeason,
+                           num.bins = params$bins)
+
+        ## do we rescale the insect variables (?):
+        if (params$rescale) {
+            rescaled <- llply(seas_bins[, insect_vars], rescaler)
+            seas_bins <- cbind(seas_bins[, 1:3], as.data.frame(rescaled))
         }
 
-        ## calculate cross validation folds for treatments
-        cv_list <<- list(FoldData(dmgNP, k = "LOOCV"))
-        names(cv_list) <<- params$trtmnt
+
+        dmgNP_sets <-  dlply(dmgNP,
+                             .(na.omit(trt2)),
+                             merge,
+                             y = seas_bins,
+                             by = c("Year", "Ranch", "Block")
+                             )
         
-        if (!exists("dmgNP_sets") ||
-            (attr(get("dmgNP_sets"), "scaled") != params$rescale)) {
+
+        dmgNP <- merge(dmgNP, seas_bins, by = c("Year", "Ranch", "Block"))
         
-            insect_vars <- paste0(c("M", "E", "F"), rep(1:params$bins, each = 3))
-            seas_bins <- ddply(c,
-                               .(Year, Ranch, Block),
-                               BinSeason,
-                               num.bins = params$bins)
+        dmgNP_sets <- assign("dmgNP_sets",
+                             c(dmgNP_sets, list("ALL" = dmgNP)),
+                             envir = parent.env(env = environment())
+                             )
 
-            ## do we rescale the insect variables (?):
-            if (params$rescale) {
-                rescaled <- llply(seas_bins[, insect_vars], rescaler)
-                seas_bins <- cbind(seas_bins[, 1:3], as.data.frame(rescaled))
-            }
+        cv_list <- llply(dmgNP_sets, FoldData, k = "LOOCV")
+        
+        assign("cv_list",
+               cv_list,
+               envir = parent.env(env = environment())
+               )
 
 
-            dmgNP_sets <-  dlply(dmgNP,
-                                 .(na.omit(trt2)),
-                                 merge,
-                                 y = seas_bins,
-                                 by = c("Year", "Ranch", "Block")
-                                 )
-            
-
-            dmgNP <- merge(dmgNP, seas_bins, by = c("Year", "Ranch", "Block"))
-            
-            dmgNP_sets <<- c(dmgNP_sets, list("ALL" = dmgNP))
-            attr(dmgNP_sets, "scaled") <<- params$rescale
-        } else {
-            dmgNP_sets <<- get('dmgNP_sets')
-        }
         ## <- data assembled
     }
     return(NULL)
@@ -814,11 +823,13 @@ AssembleParameterCombs <- function(test = NULL, ...){
     }
     
     if (test == "testModelLOOCV") {
-        val_grid <<- expand.grid(params$models,
-                                 params$trtmnt,
-                                 params$rows,
-                                 stringsAsFactors = FALSE)
-        colnames(val_grid) <<- c("rhs", "trtmnt", "fold")
+        assign("val_grid",
+               expand.grid(rhs = params$models,
+                           trtmnt = params$trtmnt,
+                           fold = params$rows,
+                           stringsAsFactors = FALSE),
+               envir = parent.env(env = environment())
+               )        
     }
     
     return(NULL)

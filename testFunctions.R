@@ -161,7 +161,7 @@ testRunSimplePredModel <-  function(K = 5,
                  seed = seed
                  )
 
-    ## this give us insect_grid and val_grid
+    ## this give us val_grid
     AssembleParameterCombs(test = "testRunSimplePredModel",
                         bins = bins,
                         K = K
@@ -185,12 +185,11 @@ testRunSimplePredModel <-  function(K = 5,
                      .inform = TRUE
                      )
 
-    merge(results, insect_grid, by = c("rhs"))
-
 }
 
 testModelLOOCV <- function(trtmnt = "ALL",
                            models = NULL,
+                           bins = 3,
                            rescale = FALSE,
                            parallel = FALSE,
                            lhs = "PercentDamaged"
@@ -200,7 +199,12 @@ testModelLOOCV <- function(trtmnt = "ALL",
         stop("must have models")
     }
 
-    AssembleData(test = "testModelLOOCV", rescale = rescale, trtmnt = trtmnt)
+    AssembleData(test = "testModelLOOCV",
+                 rescale = rescale,
+                 bins = bins,
+                 trtmnt = trtmnt
+                 )
+    
     AssembleParameterCombs(test = "testModelLOOCV",
                            models = models,
                            rows = which(!is.na(dmgNP_sets[[trtmnt]][, lhs])),
@@ -212,7 +216,7 @@ testModelLOOCV <- function(trtmnt = "ALL",
     par_opts <- list(.export = c("dmgNP_sets", "cv_list"))
 
     results <- mdply(val_grid,
-                     RunSimplePredModel,
+                     RunModelLOOCV,
                      .dmg_sets = dmgNP_sets,
                      .cv_list = cv_list,
                      .lhs = lhs,
