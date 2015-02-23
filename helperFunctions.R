@@ -789,31 +789,28 @@ AssembleParameterCombs <- function(test = NULL, ...){
         ## find combinations:
         insect_combs <- llply(1:3, function(x) { t(combn(insect_vars, x)) })
 
-        ## make key:
-        insect_grid <<- as.data.frame(insect_combs)
-        colnames(insect_grid) <<- c("V1", "V2", "V3")
-
         rhs <- llply(1:3, function(X)
                      {
                          apply(insect_combs[[X]],1,
                                function(x) paste(x, collapse = "+")
                                )
                      })
-
-        insect_grid$rhs <<- unlist(rhs)
-        insect_grid$ModelID <<- 1:length(rhs)
-        ## <- combination and key assembled
-
+        rhs <- unlist(rhs)
+        ## <- combinations
+        
         ## Assemble parameter combinations ->
         val_grid <<- expand.grid(rhs,
-                            c(as.character(na.omit(unique(dmgNP$trt2))), "ALL"),
-                            0:params$K,
-                            stringsAsFactors = FALSE
-                            )
+                                 c(
+                                     as.character(na.omit(unique(dmgNP$trt2))),
+                                     "ALL"
+                                     ),
+                                 0:params$K,
+                                 stringsAsFactors = FALSE
+                                 )
 
         colnames(val_grid) <<- c("rhs", "trtmnt", "fold")
-        ## <- parameter combinations assembled
 
+        ## <- parameter combinations assembled
     }
     
     if (test == "testModelLOOCV") {
@@ -826,5 +823,7 @@ AssembleParameterCombs <- function(test = NULL, ...){
     
     return(NULL)
 }
+
+## TODO set global variable for current test 
 
 
