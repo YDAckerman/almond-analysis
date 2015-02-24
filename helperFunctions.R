@@ -837,4 +837,16 @@ AssembleParameterCombs <- function(test = NULL, ...){
 
 ## TODO set global variable for current test 
 
+FindDangerZone <- function(dataframe){
 
+    tmp <- dataframe %>%
+        select(predicted, actual) %>%
+            filter( predicted <= .01 & actual >= .01)
+    
+    danger_zone <- with(tmp,
+                        data.frame(
+                            x = c(0, 0, .01, .01),
+                            y = c(.01, max(actual, na.rm = TRUE),
+                                max(actual, na.rm = TRUE), .01
+                                )))
+}

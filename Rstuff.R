@@ -3981,6 +3981,7 @@ danger_zone <- with(tmp,
                             max(actual, na.rm = TRUE),
                             .01
                             )))
+
 ggplot(resLOOCV, aes(predicted, actual)) +
     geom_point(aes(size = totalNuts)) +
     geom_polygon(data = danger_zone, aes(x, y), fill = "#d8161688")
@@ -3989,7 +3990,12 @@ ggplot(resLOOCV, aes(predicted, actual)) +
 bestMods <- resProp %>%
     filter(trtmnt == "ALL") %>%
     arrange(FreqError, meanPercError) %>%
-    summarise(best = head(rhs, 10))
+    summarise(
+        best = head(rhs, 10),
+        FreqError = head(FreqError, 10),
+        meanPercError = head(meanPercError, 10),
+        numPreds = head(NumPreds, 10)
+        )
 
 resLOOCV <- testModelLOOCV(models = bestMods$best,
                            rescale = TRUE,
@@ -4014,4 +4020,17 @@ tmp2 <- resLOOCV %>%
         )
 tmp <- merge(tmp1, tmp2, by = c("rhs"))
 
-ggplot(tmp, aes(meanPercError, freqError, colour = rhs)) + geom_point(size = 2)
+ggplot(tmp, aes(meanPercError, freqError, colour = rhs)) + geom_point(aes(size = numPreds))
+
+## 2/24/15 ##
+
+DrawModel(trtmnt = "ALL",
+          v1 = "F1",
+          v2 = "F2",
+          v3 = "F3")
+
+ggplot(resLOOCV, aes(x = predicted, y = actual)) +
+    geom_point(size = 2) +
+    facet_wrap(~rhs, scale = "free")
+
+PlotLOOCVmod(resLOOCV, "M1+E1+F2")

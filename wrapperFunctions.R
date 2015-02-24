@@ -303,6 +303,7 @@ RunSimplePredModel <- function(rhs,
     MEAN <- NA
     meanPercError <- NA
     FreqError <- NA
+    numPreds <- NA
     
     if (fold == 0) {
 
@@ -322,9 +323,7 @@ RunSimplePredModel <- function(rhs,
         ## dplyr experimentation
         tmp1 <- results %>%
             dplyr::filter(predicted < .01 & actual >= .01 ) %>%
-                dplyr::transmute(
-                    percError = actual - predicted
-                    ) %>%
+                dplyr::mutate(percError = actual - predicted) %>%
                         dplyr::summarise(
                             meanPercError = mean(percError, na.rm = TRUE)
                             )
@@ -335,7 +334,7 @@ RunSimplePredModel <- function(rhs,
                     numUnacceptable = sum(actual >= .01, na.rm = TRUE),
                     numPreds = sum(predicted < .01, na.rm = TRUE)
                     ) %>%
-                        dplyr::transmute(
+                        dplyr::mutate(
                             freqError = numUnacceptable /numPreds
                             )
         
@@ -347,6 +346,7 @@ RunSimplePredModel <- function(rhs,
         VARMSE <- var((residuals(m))^2, na.rm = TRUE)
         meanPercError <- tmp1$meanPercError
         FreqError <- tmp2$freqError
+        numPreds <- tmp2$numPreds
         
     } else {
 
@@ -370,7 +370,8 @@ RunSimplePredModel <- function(rhs,
                'MSE' = MSE,
                'VARMSE' = VARMSE,
                'meanPercError' = meanPercError,
-               'FreqError' = FreqError
+               'FreqError' = FreqError,
+               'NumPreds' = numPreds
                )
 }
 
@@ -483,4 +484,16 @@ RunModelLOOCV <- function(rhs,
                'actual' = rtest[, .lhs],
                'totalNuts' = rtest[, 'Tot_Nuts']
                    )
+}
+
+
+PlotLOOCVmod <- function(loocvDF, model){
+
+    m1set <- filter(loocvDF, rhs == model)
+    m1dz <- FindDangerZone(m1set)
+    
+    ggplot(m1set, aes(x = predicted, y = actual)) +
+        geom_point(size = 2) +
+            geom_polygon(data = m1dz, aes(x,y), fill = "#d8161688")
+
 }
