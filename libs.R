@@ -10,4 +10,4 @@ library(doMC)
 library(pryr)
 library(reshape)
 library(glm2)
-
+library(betareg)

@@ -307,11 +307,16 @@ RunSimplePredModel <- function(rhs,
     
     if (fold == 0) {
 
-        m <- glm2(f,
-                  data = reg_df,
-                  family = "poisson",
-                  na.action = na.exclude
-                  )
+        ## m <- glm2(f,
+        ##           data = reg_df,
+        ##           family = "poisson",
+        ##           na.action = na.exclude
+        ##           )
+
+        m <- betareg(f,
+                     data = reg_df,
+                     na.action = na.exclude,
+                     link = "loglog") ## or logit
 
         fit <- predict(m, type = "response", na.action = na.exclude)
 
@@ -355,8 +360,9 @@ RunSimplePredModel <- function(rhs,
         rtest <- reg_df[.cv_list[[trtmnt]][[fold]], ]
 
         ## formula
-        m <- glm2(f, data = rtrain, family = "poisson")
-
+        # m <- glm2(f, data = rtrain, family = "poisson")
+        m <- betareg(f, data = rtrain, link = "loglog") # or logit
+        
         ## Make predictions:
         preds <- predict(m, newdata = rtest)
 
@@ -408,8 +414,10 @@ DrawModel <- function(trtmnt = "CONV",
     } else {
         vars <- paste(na.omit(c(v1, v2, v3)), collapse = "+")
         f <- as.formula(paste(c("PercentDamaged", vars), collapse = "~"))
-        m <- glm2(f,
-                  family = "poisson",
+
+        ## previously glm with poisson family
+        m <- betareg(f,
+                  link = "loglog", ## logit, etc
                   data = set,
                   na.action = na.exclude
                   )
@@ -477,7 +485,8 @@ RunModelLOOCV <- function(rhs,
     rtest <- reg_df[.cv_list[[trtmnt]][[fold]], ]
     
     ## formula
-    m <- glm2(f, data = rtrain, family = "poisson")
+    ## m <- glm2(f, data = rtrain, family = "poisson")
+    m <- betareg(f, data = rtrain, link = "loglog")
     
     ## return predictions:
     data.frame('predicted' = predict(m, newdata = rtest, type = "response"),
