@@ -618,26 +618,27 @@ AssembleData <- function(test = NULL, ...){
     params <- list(...)
 
     if(test == "testRunSimplePredModel"){
+        
         ## Assemble all the required data ->
-        if(!exists("dmgNP")){
-            dmgNP <- subset(dmg, Variety == "NP")
-            dmgNP <- ddply(dmgNP, .(Year, Ranch, Block, trt2), summarize,
-                           Tot_Nuts = sum(Tot_Nuts, na.rm = TRUE),
-                           DmgNOW = sum(DmgNOW, na.rm = TRUE),
-                           InfNOW = sum(InfNOW, na.rm = TRUE)
-                           )
+        dmgNP <- subset(dmg, Variety == "NP")
+        dmgNP <- ddply(dmgNP, .(Year, Ranch, Block, trt2), summarize,
+                       Tot_Nuts = sum(Tot_Nuts, na.rm = TRUE),
+                       DmgNOW = sum(DmgNOW, na.rm = TRUE),
+                       InfNOW = sum(InfNOW, na.rm = TRUE)
+                       )
 
-            dmgNP <- assign("dmgNP",
-                            ddply(dmgNP, .(), transform,
-                                     PercentDamaged = DmgNOW / Tot_Nuts,
-                                     PercentInfested = InfNOW / Tot_Nuts,
-                                     PercentDMGofINF = DmgNOW / InfNOW
-                                  ),
-                            envir = parent.env(env = environment())
-                            )
-        } else {
-            dmgNP <- get('dmgNP')
-        }
+        dmgNP <- assign("dmgNP",
+                        ddply(dmgNP, .(), transform,
+                              PercentDamaged = DmgNOW / Tot_Nuts,
+                              PercentInfested = InfNOW / Tot_Nuts,
+                              PercentDMGofINF = DmgNOW / InfNOW
+                              ),
+                        envir = parent.env(env = environment())
+                        )
+        ## for betabinom
+        ## i <- which(dmgNP$PercentDamaged == 0)
+        ## dmgNP$PercentDamaged[i] <- .0001 ## or set to NA
+
 
         ## calculate cross validation folds for treatments
         cv_list <- dlply(dmgNP,
@@ -743,6 +744,10 @@ AssembleData <- function(test = NULL, ...){
                               ),
                         envir = parent.env(env = environment())
                         )
+
+        ## for betabinom
+        ## i <- which(dmgNP$PercentDamaged == 0)
+        ## dmgNP$PercentDamaged[i] <- .0001 # or set to NA
 
         insect_vars <- paste0(c("M", "E", "F"), rep(1:params$bins, each = 3))
         seas_bins <- ddply(c,

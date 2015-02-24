@@ -4024,13 +4024,27 @@ ggplot(tmp, aes(meanPercError, freqError, colour = rhs)) + geom_point(aes(size =
 
 ## 2/24/15 ##
 
-DrawModel(trtmnt = "ALL",
-          v1 = "F1",
-          v2 = "F2",
-          v3 = "F3")
+tmp <- DrawModel(trtmnt = "ALL",
+          v1 = NA,
+          v2 = "M2",
+          v3 = NA)
 
 ggplot(resLOOCV, aes(x = predicted, y = actual)) +
     geom_point(size = 2) +
     facet_wrap(~rhs, scale = "free")
 
 PlotLOOCVmod(resLOOCV, "M1+E1+F2")
+
+tmp <- llply(c("loglog", "logit", "probit", "cloglog", "cauchit"), function(x){
+    m <- betareg(PercentDamaged ~ E1 + F1, dmgNP_sets[["ALL"]], link = x)
+})
+
+preds <- fitted(m)
+
+data("GasolineYield", package = "betareg")
+
+m <- glm(cbind(DmgNOW, Tot_Nuts - DmgNOW) ~ F1 + F2 + F3,
+         data = dmgNP_sets[["ALL"]],
+         family = "binomial")
+
+m <- glm(DmgNOW ~ F1 + F2 + F3, data = dmgNP_sets[["ALL"]], family = "poisson", weights = Tot_Nuts, na.action = na.exclude)

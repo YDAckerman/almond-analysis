@@ -416,8 +416,8 @@ DrawModel <- function(trtmnt = "CONV",
         f <- as.formula(paste(c("PercentDamaged", vars), collapse = "~"))
 
         ## previously glm with poisson family
-        m <- betareg(f,
-                  link = "loglog", ## logit, etc
+        m <- glm(f,
+                 family = "poisson",
                   data = set,
                   na.action = na.exclude
                   )
@@ -456,6 +456,7 @@ DrawModel <- function(trtmnt = "CONV",
         }
     }
 
+    return(m)
 }
 
 RunModelLOOCV <- function(rhs,
