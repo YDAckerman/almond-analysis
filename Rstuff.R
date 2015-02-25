@@ -3936,7 +3936,7 @@ temp <- resProp %>%
 
 head(temp)
 
-DrawModel("ALL",v1 = "F2", v2 = "E3", v3 = "F3", residuals = FALSE)
+DrawModel("ALL",v1 = "F1+F2+F3+F4+F5+F6+F7", v2 = NA, v3 = NA, residuals = FALSE)
 
 tmp <- dmg %>%
     dplyr::summarise(
@@ -4048,3 +4048,34 @@ m <- glm(cbind(DmgNOW, Tot_Nuts - DmgNOW) ~ F1 + F2 + F3,
          family = "binomial")
 
 m <- glm(DmgNOW ~ F1 + F2 + F3, data = dmgNP_sets[["ALL"]], family = "poisson", weights = Tot_Nuts, na.action = na.exclude)
+
+## 2/24/15 ##
+
+## Looks like the data just does not describe the response very well...
+
+AssembleData(test = "testRunSimplePredModel",
+             K = 3,
+             rescale = FALSE,
+             bins = 4,
+             seed = 10)
+
+AssembleParameterCombs(test = "testRunSimplePredModel",
+                       bins = 4,
+                       K = 3
+                       )
+
+
+
+## I've changed updated the models to exclude the intercept, we'll see
+## what happens:
+resProp <- testRunSimplePredModel(bins = 3, parallel = TRUE)
+
+ggplot(resProp, aes(x = meanPercError, y = FreqError)) + geom_point(size = 2) + facet_wrap(~trtmnt, scale = "free")
+
+
+## what does merge do when one of the merging columns is a factor and the other
+## numeric?
+df1 <- data.frame(Year = factor(c("2011", "2012", "2013")), dog = c("a", "b", "c"))
+df2 <- data.frame(Year = c(2011, 2013), cat = c("1", "2"))
+
+tmp <- merge(df1,df2, by = c("Year"))

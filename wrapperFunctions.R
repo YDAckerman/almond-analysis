@@ -307,16 +307,18 @@ RunSimplePredModel <- function(rhs,
     
     if (fold == 0) {
 
-        ## m <- glm2(f,
-        ##           data = reg_df,
-        ##           family = "poisson",
-        ##           na.action = na.exclude
-        ##           )
+        m <- glm2(f,
+                  data = reg_df,
+                  family = "poisson",
+                  na.action = na.exclude
+                  )
 
-        m <- betareg(f,
-                     data = reg_df,
-                     na.action = na.exclude,
-                     link = "loglog") ## or logit
+        m <- update(m, ~ . -1)
+        
+        ## m <- betareg(f,
+        ##              data = reg_df,
+        ##              na.action = na.exclude,
+        ##              link = "loglog") ## or logit
 
         fit <- predict(m, type = "response", na.action = na.exclude)
 
@@ -325,7 +327,7 @@ RunSimplePredModel <- function(rhs,
                               'totalNuts' = reg_df[, 'Tot_Nuts']
                               )
 
-        ## dplyr experimentation
+        ## find additional statistics about model:
         tmp1 <- results %>%
             dplyr::filter(predicted < .01 & actual >= .01 ) %>%
                 dplyr::mutate(percError = actual - predicted) %>%
@@ -360,8 +362,8 @@ RunSimplePredModel <- function(rhs,
         rtest <- reg_df[.cv_list[[trtmnt]][[fold]], ]
 
         ## formula
-        # m <- glm2(f, data = rtrain, family = "poisson")
-        m <- betareg(f, data = rtrain, link = "loglog") # or logit
+        m <- glm2(f, data = rtrain, family = "poisson")
+        # m <- betareg(f, data = rtrain, link = "loglog") # or logit
         
         ## Make predictions:
         preds <- predict(m, newdata = rtest)
@@ -393,11 +395,13 @@ DrawModel <- function(trtmnt = "CONV",
     AssembleData(test = "testRunSimplePredModel",
                  K = 0,
                  rescale = FALSE,
-                 bins = 3,
+                 bins = 8,
                  seed = 10
              )
 
-    set <- dmgNP_sets[[trtmnt]]
+    set <- filter(dmgNP_sets[[trtmnt]], !is.na(PercentDamaged))
+
+    set$PercentDamaged <- set$PercentDamaged + .0001 ## for betareg
     
     if (individual) {
         forPlot <- melt(set,
@@ -420,7 +424,8 @@ DrawModel <- function(trtmnt = "CONV",
                  family = "poisson",
                   data = set,
                   na.action = na.exclude
-                  )
+                     )
+        m <- update(m, ~ . -1)
 
         set$Predictions <- predict(m, type = "response")
 
@@ -455,8 +460,6 @@ DrawModel <- function(trtmnt = "CONV",
                              paste(na.omit(c(v1, v2, v3)), collapse = "+")))
         }
     }
-
-    return(m)
 }
 
 RunModelLOOCV <- function(rhs,
@@ -506,4 +509,36 @@ PlotLOOCVmod <- function(loocvDF, model){
         geom_point(size = 2) +
             geom_polygon(data = m1dz, aes(x,y), fill = "#d8161688")
 
+}
+
+
+RunLogisticModel <- function(rhs,
+                             trtmnt,
+                             .dmg_sets = NULL,
+                             .lhs = "UnacceptableDamage",
+                             .probcut = .5
+                             ) {
+
+    ## TODO: write function summary
+
+    if (is.null(.cv_list)  || is.null(.dmg_sets)){
+        stop("Please add .cv_list & dmg_sets & .res_sets")
+    }
+
+    f <- paste0(.lhs, "~", rhs)
+    f <- as.formula(f)
+
+    ## Pull out the desired dataset:
+    reg_df <- dplyr::filter(.dmg_sets[[trtmnt]], !is.na(.lhs))
+
+    m <- glm(f,
+              data = reg_df,
+              family = "binomial"
+              )
+    
+    fit <- predict(m, type = "response")
+    preds <- rep(FALSE, length(fit))
+    preds[fit > .probcut] <- TRUE
+    
+    
 }

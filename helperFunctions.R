@@ -621,20 +621,22 @@ AssembleData <- function(test = NULL, ...){
         
         ## Assemble all the required data ->
         dmgNP <- subset(dmg, Variety == "NP")
+        dmgNP$Year <- as.numeric(as.character(dmgNP$Year))
         dmgNP <- ddply(dmgNP, .(Year, Ranch, Block, trt2), summarize,
                        Tot_Nuts = sum(Tot_Nuts, na.rm = TRUE),
                        DmgNOW = sum(DmgNOW, na.rm = TRUE),
                        InfNOW = sum(InfNOW, na.rm = TRUE)
                        )
 
-        dmgNP <- assign("dmgNP",
-                        ddply(dmgNP, .(), transform,
-                              PercentDamaged = DmgNOW / Tot_Nuts,
-                              PercentInfested = InfNOW / Tot_Nuts,
-                              PercentDMGofINF = DmgNOW / InfNOW
-                              ),
-                        envir = parent.env(env = environment())
-                        )
+        dmgNP <- dmgNP %>% dplyr::mutate(
+            PercentDamaged = DmgNOW / Tot_Nuts,
+            PercentInfested = InfNOW / Tot_Nuts,
+            PercentDMGofINF = DmgNOW / InfNOW,
+            UnacceptableDamage = ((DmgNOW / Tot_Nuts) >= .01)
+            )
+
+        dmgNP <- assign("dmgNP", dmgNP, envir = parent.env(env = environment()))
+
         ## for betabinom
         ## i <- which(dmgNP$PercentDamaged == 0)
         ## dmgNP$PercentDamaged[i] <- .0001 ## or set to NA
@@ -730,20 +732,22 @@ AssembleData <- function(test = NULL, ...){
         ## Assemble all the required data ->
 
         dmgNP <- dplyr::filter(dmg, Variety == "NP")
+        dmgNP$Year <- as.numeric(as.character(dmgNP$Year))
+        
         dmgNP <- ddply(dmgNP, .(Year, Ranch, Block, trt2), summarize,
                        Tot_Nuts = sum(Tot_Nuts, na.rm = TRUE),
                        DmgNOW = sum(DmgNOW, na.rm = TRUE),
                        InfNOW = sum(InfNOW, na.rm = TRUE)
                        )
 
-        dmgNP <- assign("dmgNP",
-                        ddply(dmgNP, .(), transform,
-                              PercentDamaged = DmgNOW / Tot_Nuts,
-                              PercentInfested = InfNOW / Tot_Nuts,
-                              PercentDMGofINF = DmgNOW / InfNOW
-                              ),
-                        envir = parent.env(env = environment())
-                        )
+        dmgNP <- dmgNP %>% dplyr::mutate(
+            PercentDamaged = DmgNOW / Tot_Nuts,
+            PercentInfested = InfNOW / Tot_Nuts,
+            PercentDMGofINF = DmgNOW / InfNOW,
+            UnacceptableDamage = ((DmgNOW / Tot_Nuts) >= .01)
+            )
+
+        dmgNP <- assign("dmgNP", dmgNP, envir = parent.env(env = environment()))
 
         ## for betabinom
         ## i <- which(dmgNP$PercentDamaged == 0)
@@ -801,14 +805,16 @@ AssembleParameterCombs <- function(test = NULL, ...){
                                 rep(1:params$bins, each = 3)))
 
         ## find combinations:
-        insect_combs <- llply(1:3, function(x) { t(combn(insect_vars, x)) })
+        insect_combs <- llply(1:params$bins,
+                              function(x) { t(combn(insect_vars, x)) })
 
-        rhs <- llply(1:3, function(X)
-                     {
+        rhs <- llply(1:params$bins,
+                     function(X) {
                          apply(insect_combs[[X]],1,
                                function(x) paste(x, collapse = "+")
                                )
                      })
+        
         rhs <- unlist(rhs)
         ## <- combinations
         

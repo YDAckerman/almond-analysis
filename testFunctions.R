@@ -143,8 +143,8 @@ testRunParameticCVagainstResiduals <- function(K = 5,
 }
 
 
-testRunSimplePredModel <-  function(K = 5,
-                                    bins = 5,
+testRunSimplePredModel <-  function(K = 0,
+                                    bins = 4,
                                     rescale = FALSE,
                                     seed = 10,
                                     parallel = FALSE,
