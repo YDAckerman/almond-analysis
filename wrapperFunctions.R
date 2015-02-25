@@ -516,7 +516,7 @@ RunLogisticModel <- function(rhs,
                              trtmnt,
                              .dmg_sets = NULL,
                              .lhs = "UnacceptableDamage",
-                             .probcut = .5
+                             .thresh = .5
                              ) {
 
     ## TODO: write function summary
@@ -531,14 +531,22 @@ RunLogisticModel <- function(rhs,
     ## Pull out the desired dataset:
     reg_df <- dplyr::filter(.dmg_sets[[trtmnt]], !is.na(.lhs))
 
+    ## fit model
     m <- glm(f,
               data = reg_df,
               family = "binomial"
-              )
-    
+             )
+
+    ## find predictions and convert to categories based on .thresh
     fit <- predict(m, type = "response")
     preds <- rep(FALSE, length(fit))
-    preds[fit > .probcut] <- TRUE
-    
-    
+    preds[fit > .thresh] <- TRUE
+
+    ## calculate statistics
+    tbl <- table(preds, reg_df$[, .lhs])
+    PercFalseNegs <- tab[1,2] / (sum(tab[2,]) + tab[1,1])
+    PercFalsePos <- tab[2,1] / (sum(tab[1,]) + tab[2,2])
+
+    ## return results
+    data.frame('PFalseNegs' = PercFalseNegs, 'PFalsePos' = PercFalsePos)
 }

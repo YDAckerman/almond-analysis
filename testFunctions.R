@@ -226,3 +226,13 @@ testModelLOOCV <- function(trtmnt = "ALL",
                      .inform = TRUE
                      )
 }
+
+testRunLogisticModel <- function(K = 0,
+                                    bins = 4,
+                                    rescale = FALSE,
+                                    seed = 10,
+                                    parallel = FALSE,
+                                    lhs = "UnacceptableDamage"
+                                    ){
+
+}
