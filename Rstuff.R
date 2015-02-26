@@ -4055,10 +4055,9 @@ m <- glm(DmgNOW ~ F1 + F2 + F3, data = dmgNP_sets[["ALL"]], family = "poisson", 
 
 AssembleData(test = "testRunSimplePredModel",
              K = 3,
-             rescale = FALSE,
+             rescale = TRUE,
              bins = 4,
              seed = 10)
-
 AssembleParameterCombs(test = "testRunSimplePredModel",
                        bins = 4,
                        K = 3
@@ -4079,3 +4078,78 @@ df1 <- data.frame(Year = factor(c("2011", "2012", "2013")), dog = c("a", "b", "c
 df2 <- data.frame(Year = c(2011, 2013), cat = c("1", "2"))
 
 tmp <- merge(df1,df2, by = c("Year"))
+
+resLog3 <- testRunBinomialModel()
+resLog4 <- testRunBinomialModel(bins = 4)
+resLog5 <- testRunBinomialModel(bins = 5)
+
+ggplot(resLog5, aes(PFalseNegs, PFalsePos)) + geom_point(size = 2) 
+
+bestMods <- resLog5 %>%
+    arrange(PFalseNegs, PFalsePos) %>%
+    summarise(
+        best <- head(rhs, 10),
+        PFalseN <- head(PFalseNegs, 10),
+        PFalseP <- head(PFalsePos, 10)
+        )
+
+bestMods <- resLog4 %>%
+    arrange(PFalseNegs, PFalsePos) %>%
+    summarise(
+        best <- head(rhs, 10),
+        PFalseN <- head(PFalseNegs, 10),
+        PFalseP <- head(PFalsePos, 10)
+        )
+
+
+bestMods <- resLog3 %>%
+    arrange(PFalseNegs, PFalsePos) %>%
+    summarise(
+        best <- head(rhs, 10),
+        PFalseN <- head(PFalseNegs, 10),
+        PFalseP <- head(PFalsePos, 10)
+        )
+
+## 2/26/15 ##
+
+## how many varieties are in an individual plot?
+varsPerBlock <- dmg %>%
+    dplyr::group_by(Year, Ranch, Block) %>%
+    dplyr::summarise(
+        numvariety = length(unique(Variety))
+        )
+
+## I want to see the correlation between vareital damage:
+
+dmg_consolidated<- ddply(dmg, .(Year, Ranch, Block, Variety), summarize,
+                       Tot_Nuts = sum(Tot_Nuts, na.rm = TRUE),
+                       DmgNOW = sum(DmgNOW, na.rm = TRUE),
+                       InfNOW = sum(InfNOW, na.rm = TRUE)
+                       )
+
+dmg_consolidated <- dplyr::select(dmg_consolidated, Year, Ranch, Block, Variety, DmgNOW)
+
+library(reshape2)
+dmg_consolidated_wide <- dcast(dmg_consolidated, Year + Ranch + Block ~ Variety, value.var = "DmgNOW")
+
+ggplot(dmg_consolidated, aes( x = Variety, y = DmgNOW)) + geom_boxplot()
+
+cor(dmg_consolidated_wide[,6:17], use = "pairwise.complete.obs")
+
+resBin3 <- testRunBinomialModel(model = "binomial")
+ggplot(resBin3, aes(x = meanPercError, y = freqError)) + geom_point(size = 2)
+
+resBin4 <- testRunBinomialModel(model = "binomial", bins = 4)
+ggplot(resBin4, aes(x = meanPercError, y = freqError)) + geom_point(size = 2)
+
+BestBin4Mods <- resBin4 %>%
+    arrange(freqError, meanPercError) %>%
+    summarise(
+        best = head(rhs, 10)
+        )
+
+resBin5 <- testRunBinomialModel(model = "binomial", bins = 5)
+ggplot(resBin5, aes(x = meanPercError, y = freqError)) + geom_point(size = 2)
+
+
+

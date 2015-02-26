@@ -385,7 +385,8 @@ BinSeason <- function(df, num.bins = 8){
 
         bin_df <- subset(df, DayOfYear %in% seg)
 
-        males <- mean(bin_df$Males, na.rm = TRUE)
+        males <- mean(subset(bin_df, TrapType == "male-virginFemale")$Males,
+                      na.rm = TRUE)
         eggs <- mean(bin_df$Eggs, na.rm = TRUE)
         females <- mean(bin_df$Females, na.rm = TRUE)
 
@@ -620,9 +621,10 @@ AssembleData <- function(test = NULL, ...){
     if(test == "testRunSimplePredModel"){
         
         ## Assemble all the required data ->
-        dmgNP <- subset(dmg, Variety == "NP")
+        dmgNP <- subset(dmg, Variety %in% c("NP", "Bu", "Ca", "Mo", "Pr", "So", "WC"))
         dmgNP$Year <- as.numeric(as.character(dmgNP$Year))
-        dmgNP <- ddply(dmgNP, .(Year, Ranch, Block, trt2), summarize,
+
+        dmgNP <- ddply(dmgNP, .(Year, Ranch, Block, Variety, trt2), summarize,
                        Tot_Nuts = sum(Tot_Nuts, na.rm = TRUE),
                        DmgNOW = sum(DmgNOW, na.rm = TRUE),
                        InfNOW = sum(InfNOW, na.rm = TRUE)
@@ -731,10 +733,10 @@ AssembleData <- function(test = NULL, ...){
     if (test == "testModelLOOCV") {
         ## Assemble all the required data ->
 
-        dmgNP <- dplyr::filter(dmg, Variety == "NP")
+        dmgNP <- subset(dmg, Variety %in% c("NP", "Bu", "Ca", "Mo", "Pr", "So", "WC"))
         dmgNP$Year <- as.numeric(as.character(dmgNP$Year))
         
-        dmgNP <- ddply(dmgNP, .(Year, Ranch, Block, trt2), summarize,
+        dmgNP <- ddply(dmgNP, .(Year, Ranch, Block, Variety, trt2), summarize,
                        Tot_Nuts = sum(Tot_Nuts, na.rm = TRUE),
                        DmgNOW = sum(DmgNOW, na.rm = TRUE),
                        InfNOW = sum(InfNOW, na.rm = TRUE)

@@ -462,6 +462,29 @@ DrawModel <- function(trtmnt = "CONV",
     }
 }
 
+DrawBinomialModel <- function(model = "E2 + E4 + F4"){
+
+    AssembleData(test = "testRunSimplePredModel",
+                 K = 3,
+                 rescale = TRUE,
+                 bins = 4,
+                 seed = 10)
+    AssembleParameterCombs(test = "testRunSimplePredModel",
+                           bins = 4,
+                           K = 3
+                           )
+
+    f <- paste0("cbind(DmgNOW, Tot_Nuts - DmgNOW) ~ ", model)
+    m <- glm(as.formula(f),
+             data = dmgNP_sets[["ALL"]],
+             family = binomial,
+             na.action = na.exclude)
+
+    mdf <- cbind(dmgNP_sets[["ALL"]], preds = predict(m, type = "response"))
+
+    ggplot(mdf, aes(x = preds, y = PercentDamaged)) + geom_point(size = 2)
+}
+
 RunModelLOOCV <- function(rhs,
                           trtmnt,
                           fold = NULL,
@@ -515,38 +538,101 @@ PlotLOOCVmod <- function(loocvDF, model){
 RunLogisticModel <- function(rhs,
                              trtmnt,
                              .dmg_sets = NULL,
-                             .lhs = "UnacceptableDamage",
                              .thresh = .5
                              ) {
 
     ## TODO: write function summary
 
-    if (is.null(.cv_list)  || is.null(.dmg_sets)){
+    if (is.null(.dmg_sets)){
         stop("Please add .cv_list & dmg_sets & .res_sets")
     }
 
-    f <- paste0(.lhs, "~", rhs)
+    f <- paste0("UnacceptableDamage ~ ", rhs)
     f <- as.formula(f)
 
     ## Pull out the desired dataset:
-    reg_df <- dplyr::filter(.dmg_sets[[trtmnt]], !is.na(.lhs))
+    reg_df <- .dmg_sets[[trtmnt]]
+    resp <- reg_df[, "UnacceptableDamage"]
 
     ## fit model
     m <- glm(f,
               data = reg_df,
-              family = "binomial"
+             family = "binomial",
+             na.action = na.exclude
              )
 
     ## find predictions and convert to categories based on .thresh
     fit <- predict(m, type = "response")
+
     preds <- rep(FALSE, length(fit))
     preds[fit > .thresh] <- TRUE
 
+    i <- complete.cases(preds, resp)
+
     ## calculate statistics
-    tbl <- table(preds, reg_df$[, .lhs])
-    PercFalseNegs <- tab[1,2] / (sum(tab[2,]) + tab[1,1])
-    PercFalsePos <- tab[2,1] / (sum(tab[1,]) + tab[2,2])
+    tbl <- table(preds, resp)
+
+    PercFalseNegs <- tbl[1,2] / (sum(tbl))
+    PercFalsePos <- tbl[2,1] / (sum(tbl))
 
     ## return results
     data.frame('PFalseNegs' = PercFalseNegs, 'PFalsePos' = PercFalsePos)
 }
+
+RunBinomialModel <- function(rhs,
+                             trtmnt,
+                             .dmg_sets = NULL,
+                             .thresh = .5
+                             ) {
+
+    if (is.null(.dmg_sets)) {
+        stop("Please add .cv_list & dmg_sets & .res_sets")
+    }
+
+    f <- paste0("cbind(DmgNOW, Tot_Nuts - DmgNOW) ~ ", rhs)
+    f <- as.formula(f)
+
+    ## Pull out the desired dataset:
+    reg_df <- .dmg_sets[[trtmnt]]
+    resp <- reg_df[, "PercentDamaged"]
+
+    ## fit model
+    m <- glm(f,
+             data = reg_df,
+             family = binomial(link = logit),
+             na.action = na.exclude
+             )
+
+    ## find predictions and convert to categories based on .thresh
+    fit <- predict(m, type = "response")
+
+    results <- data.frame('predicted' = fit,
+                          'actual' = resp
+                          )
+
+    ## find additional statistics about model:
+    tmp1 <- results %>%
+        dplyr::filter(predicted < .01 & actual >= .01 ) %>%
+            dplyr::mutate(percError = actual - predicted) %>%
+                dplyr::summarise(
+                    meanPercError = mean(percError, na.rm = TRUE)
+                    )
+    
+    tmp2 <- results %>%
+        dplyr::filter(predicted < .01) %>%
+            dplyr::summarise(
+                numUnacceptable = sum(actual >= .01, na.rm = TRUE),
+                numPreds = sum(predicted < .01, na.rm = TRUE)
+                ) %>%
+                    dplyr::mutate(
+                        ## does this undervalue the models? -no?
+                        freqError = numUnacceptable / numPreds
+                        )
+    
+    data.frame('meanPercError' = tmp1$meanPercError,
+               'freqError' = tmp2$freqError)
+}
+
+RunASinModel <- function(){}
+
+RunSVMModel <- function(){}

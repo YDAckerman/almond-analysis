@@ -227,12 +227,56 @@ testModelLOOCV <- function(trtmnt = "ALL",
                      )
 }
 
-testRunLogisticModel <- function(K = 0,
-                                    bins = 4,
-                                    rescale = FALSE,
-                                    seed = 10,
-                                    parallel = FALSE,
-                                    lhs = "UnacceptableDamage"
-                                    ){
+testRunBinomialModel <- function(K = 0,
+                                 bins = 3,
+                                 rescale = FALSE,
+                                 seed = 10,
+                                 parallel = TRUE,
+                                 model = "logistic"
+                                 ){
 
+    ## this gives us dmgNP, cv_list, and dmgNP_sets
+    AssembleData(test = "testRunSimplePredModel",
+                 K = K,
+                 rescale = rescale,
+                 bins = bins,
+                 seed = seed
+                 )
+
+    ## this give us val_grid
+    AssembleParameterCombs(test = "testRunSimplePredModel",
+                        bins = bins,
+                        K = K
+                        )
+
+    ## parallel:
+    if (parallel) {registerDoMC(cores = 4)}
+
+    ## TODO: make par_opts work
+    par_opts <- list(.export = c("dmgNP_sets"))
+
+    if (model == "logistic") {
+
+        results <- mdply(filter(val_grid[, c('rhs', 'trtmnt')], trtmnt == "ALL"),
+                         RunLogisticModel,
+                         .dmg_sets = dmgNP_sets,
+                         .progress = "text",
+                         .parallel = parallel,
+                         .paropts = par_opts,
+                         .inform = TRUE
+                     )
+
+        
+    } else if (model == "binomial") {
+
+        val_grid <- filter(val_grid[, c('rhs', 'trtmnt')], trtmnt == "ALL")
+        results <- mdply(val_grid,
+                         RunBinomialModel,
+                         .dmg_sets = dmgNP_sets,
+                         .progress = "text",
+                         .parallel = parallel,
+                         .paropts = par_opts,
+                         .inform = TRUE
+                     )
+    }
 }
