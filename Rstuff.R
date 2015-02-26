@@ -4152,4 +4152,10 @@ resBin5 <- testRunBinomialModel(model = "binomial", bins = 5)
 ggplot(resBin5, aes(x = meanPercError, y = freqError)) + geom_point(size = 2)
 
 
+library(mgcv)
 
+m <- gam(PercentDamaged ~ s(E2) + s(E4) + s(F4), data = dmgNP_sets[["ALL"]], na.action = na.exclude)
+
+mdf <- cbind(dmgNP_sets[["ALL"]], preds = predict(m, type = "response"))
+
+ggplot(mdf, aes(preds, PercentDamaged)) + geom_point(size = 2)
