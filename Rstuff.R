@@ -4151,11 +4151,105 @@ BestBin4Mods <- resBin4 %>%
 resBin5 <- testRunBinomialModel(model = "binomial", bins = 5)
 ggplot(resBin5, aes(x = meanPercError, y = freqError)) + geom_point(size = 2)
 
+AssembleData(test = "testRunSimplePredModel",
+             K = 3,
+             rescale = TRUE,
+             bins = 4,
+             seed = 10)
 
+AssembleParameterCombs(test = "testRunSimplePredModel",
+                       bins = 4,
+                       K = 3
+                       )
+
+## Will Gams help?
 library(mgcv)
 
-m <- gam(PercentDamaged ~ s(E2) + s(E4) + s(F4), data = dmgNP_sets[["ALL"]], na.action = na.exclude)
+m <- gam(asin(sqrt(PercentDamaged)) ~ s(E2) + s(E4) + s(F4) - 1, data = dmgNP_sets[["ALL"]], na.action = na.exclude)
 
-mdf <- cbind(dmgNP_sets[["ALL"]], preds = predict(m, type = "response"))
+mdf <- cbind(dmgNP_sets[["ALL"]], preds = sin(predict(m, type = "response"))^2)
 
 ggplot(mdf, aes(preds, PercentDamaged)) + geom_point(size = 2)
+
+## what about svms?
+library(e1071)
+
+m <- svm(as.factor(UnacceptableDamage) ~ M1 + E3,
+         data = dmgNP_sets$ALL,
+         cost = 200,
+         gamma = 1,
+         na.action = na.exclude)
+
+tb <- table(as.factor(dmgNP_sets$ALL$UnacceptableDamage), preds = predict(m))
+tb[1,2] / sum(tb)
+tb[2,1] / sum(tb)
+
+## compared to logistic?
+m <- glm(UnacceptableDamage ~  E2 + E4 + F4,
+         data = dmgNP_sets$ALL,
+         family = "binomial",
+         na.action = na.exclude)
+
+preds = rep(FALSE, length(predict(m)))
+preds[predict(m) >  .5] <- TRUE
+
+mdf <- table(dmgNP_sets$ALL$UnacceptableDamage, preds)
+
+
+## 2/27/15 ##
+
+resBin3 <- testRunBinomialModel(model = "binomial")
+
+resAsin3 <- testRunBinomialModel(model = "asin")
+resSvm3 <- testRunBinomialModel(model = "svm")
+reslogit3 <- testRunBinomialModel(model = "logistic")
+
+resBetaBin3 <- testRunBinomialModel(model = "betabinomial")
+
+plots <- llply(list(resBin3, resAsin3, resSvm3, reslogit3), function(set){    
+    if(!is.null(set$meanPercError)){
+        ggplot(set, aes(x = meanPercError, y = freqError)) +
+            geom_point(size = 2) +
+                ggtitle(attr(set, "model"))
+    } else {
+        ggplot(set, aes(x = PFalseNegs , y = PFalsePos)) +
+            geom_point(size = 2) +
+                ggtitle(attr(set, "model"))
+    }
+})
+
+library(gridExtra)
+
+do.call(grid.arrange, plots)
+
+
+20     E1+E2    ALL  0.2251309 0.03490401
+21     E1+F2    ALL  0.2251309 0.03490401
+22     E1+M3    ALL  0.2251309 0.03490401
+23     E1+E3    ALL  0.2251309 0.03490401
+
+library(aod)
+
+tmpset <- filter(dmgNP_sets$ALL, !is.na(DmgNOW) & !is.na(Tot_Nuts))
+m <- betabin(cbind(DmgNOW, Tot_Nuts - DmgNOW) ~ E1 + E3, ~1, data = tmpset, hessian = FALSE, na.action = na.exclude)
+tmpfit <- fitted(m)
+
+
+## just helping George With something
+res <- apply(ready_mites, 1, function(x){
+
+    row <- x
+    spray <- row[22]
+    rowid <- row[??]
+    val <- NA
+    if(spray == 0){
+
+        val <- sum(subset(ready_mites, rowID <= rowid)$pesticide)
+    }
+})
+
+ready_mites$Splitvar <- res
+
+ddply(ready_mites, .(!is.na(Splitvar)), function(etc){})
+##
+

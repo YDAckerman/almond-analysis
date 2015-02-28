@@ -255,28 +255,25 @@ testRunBinomialModel <- function(K = 0,
     ## TODO: make par_opts work
     par_opts <- list(.export = c("dmgNP_sets"))
 
-    if (model == "logistic") {
+    funcVar <- switch(model,
+                      logistic = RunLogisticModel,
+                      binomial = RunBinomialModel,
+                      svm = RunSVMModel,
+                      asin = RunAsinModel,
+                      betabinomial = RunBetaBinomialModel
+                      )
 
-        results <- mdply(filter(val_grid[, c('rhs', 'trtmnt')], trtmnt == "ALL"),
-                         RunLogisticModel,
-                         .dmg_sets = dmgNP_sets,
-                         .progress = "text",
-                         .parallel = parallel,
-                         .paropts = par_opts,
-                         .inform = TRUE
+    val_grid <- filter(val_grid[, c('rhs', 'trtmnt')], trtmnt == "ALL")
+    results <- mdply(val_grid[1,],
+                     funcVar,
+                     .dmg_sets = dmgNP_sets,
+                     .progress = "text",
+                     .parallel = parallel,
+                     .paropts = par_opts,
+                     .inform = TRUE
                      )
 
-        
-    } else if (model == "binomial") {
+    attr(results, "model") <- model
 
-        val_grid <- filter(val_grid[, c('rhs', 'trtmnt')], trtmnt == "ALL")
-        results <- mdply(val_grid,
-                         RunBinomialModel,
-                         .dmg_sets = dmgNP_sets,
-                         .progress = "text",
-                         .parallel = parallel,
-                         .paropts = par_opts,
-                         .inform = TRUE
-                     )
-    }
+    results
 }

@@ -581,8 +581,7 @@ RunLogisticModel <- function(rhs,
 
 RunBinomialModel <- function(rhs,
                              trtmnt,
-                             .dmg_sets = NULL,
-                             .thresh = .5
+                             .dmg_sets = NULL
                              ) {
 
     if (is.null(.dmg_sets)) {
@@ -633,6 +632,151 @@ RunBinomialModel <- function(rhs,
                'freqError' = tmp2$freqError)
 }
 
-RunASinModel <- function(){}
+RunAsinModel <- function(rhs,
+                         trtmnt,
+                         .dmg_sets = NULL
+                         ) {
 
-RunSVMModel <- function(){}
+    if (is.null(.dmg_sets)) {
+        stop("Please add .cv_list & dmg_sets & .res_sets")
+    }
+
+    f <- paste0("asin(sqrt(PercentDamaged)) ~ ", rhs)
+    f <- as.formula(f)
+
+    ## Pull out the desired dataset:
+    reg_df <- .dmg_sets[[trtmnt]]
+    resp <- reg_df$PercentDamaged
+
+    ## fit model
+    m <- glm(f,
+             data = reg_df,
+             family = "gaussian",
+             na.action = na.exclude
+             )
+
+    ## find predictions and convert to categories based on .thresh
+    fit <- predict(m, type = "response")
+
+    results <- data.frame('predicted' = sin(fit)^2,
+                          'actual' = resp
+                          )
+
+    ## find additional statistics about model:
+    tmp1 <- results %>%
+        dplyr::filter(predicted < .01 & actual >= .01 ) %>%
+            dplyr::mutate(percError = actual - predicted) %>%
+                dplyr::summarise(
+                    meanPercError = mean(percError, na.rm = TRUE)
+                    )
+    
+    tmp2 <- results %>%
+        dplyr::filter(predicted < .01) %>%
+            dplyr::summarise(
+                numUnacceptable = sum(actual >= .01, na.rm = TRUE),
+                numPreds = sum(predicted < .01, na.rm = TRUE)
+                ) %>%
+                    dplyr::mutate(
+                        ## does this undervalue the models? -no?
+                        freqError = numUnacceptable / numPreds
+                        )
+    
+    data.frame('meanPercError' = tmp1$meanPercError,
+               'freqError' = tmp2$freqError)
+
+}
+
+RunSVMModel <- function(rhs,
+                         trtmnt,
+                         .dmg_sets = NULL
+                         ) {
+
+    ## TODO: write function summary
+
+    if (is.null(.dmg_sets)){
+        stop("Please add .cv_list & dmg_sets & .res_sets")
+    }
+
+    f <- paste0("UnacceptableDamage ~ ", rhs)
+    f <- as.formula(f)
+
+    ## Pull out the desired dataset:
+    reg_df <- .dmg_sets[[trtmnt]]
+    resp <- reg_df$UnacceptableDamage <- as.factor(reg_df$UnacceptableDamage)
+
+    ## fit model
+    m <- svm(f,
+             data = reg_df,
+             cost = 100,
+             gamma = 1,
+             na.action = na.exclude
+             )
+
+    ## find predictions and convert to categories based on .thresh
+    fit <- predict(m)
+
+    ## calculate statistics
+    tbl <- table(fit, resp)
+
+    PercFalseNegs <- tbl[1,2] / (sum(tbl))
+    PercFalsePos <- tbl[2,1] / (sum(tbl))
+
+    ## return results
+    data.frame('PFalseNegs' = PercFalseNegs, 'PFalsePos' = PercFalsePos)
+}
+
+
+RunBetaBinomialModel <- function(rhs,
+                                 trtmnt,
+                                 .dmg_sets = NULL
+                                 ) {
+    
+    if (is.null(.dmg_sets)) {
+        stop("Please add .cv_list & dmg_sets & .res_sets")
+    }
+
+    f <- paste0("cbind(DmgNOW, Tot_Nuts - DmgNOW) ~ ", rhs)
+    f <- as.formula(f)
+
+    ## Pull out the desired dataset:
+    reg_df <- .dmg_sets[[trtmnt]]
+    print(dim(reg_df))
+    
+    resp <- reg_df$PercentDamaged
+
+    ## fit model
+    m <- betabin(f, ~1, data = reg_df,
+                 link = "logit",
+                 hessian = FALSE, ## TODO deal with singular Hessian
+                 na.action = na.exclude
+                 )
+
+    ## find predictions and convert to categories based on .thresh
+    fit <- fitted(m, type = "response")
+
+    results <- data.frame('predicted' = fit,
+                          'actual' = resp
+                          )
+
+    ## find additional statistics about model:
+    tmp1 <- results %>%
+        dplyr::filter(predicted < .01 & actual >= .01 ) %>%
+            dplyr::mutate(percError = actual - predicted) %>%
+                dplyr::summarise(
+                    meanPercError = mean(percError, na.rm = TRUE)
+                    )
+    
+    tmp2 <- results %>%
+        dplyr::filter(predicted < .01) %>%
+            dplyr::summarise(
+                numUnacceptable = sum(actual >= .01, na.rm = TRUE),
+                numPreds = sum(predicted < .01, na.rm = TRUE)
+                ) %>%
+                    dplyr::mutate(
+                        ## does this undervalue the models? -no?
+                        freqError = numUnacceptable / numPreds
+                        )
+    
+    data.frame('meanPercError' = tmp1$meanPercError,
+               'freqError' = tmp2$freqError)
+}
